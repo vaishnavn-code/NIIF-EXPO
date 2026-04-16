@@ -39,13 +39,13 @@ export default function DonutChart({
           }}
           formatter={(v) => [formatter ? formatter(v) : v]}
         />
-        {showLegend && (
+        {/* {showLegend && (
           <Legend
             iconType="circle"
             iconSize={8}
             wrapperStyle={{ fontSize: 10, fontFamily: 'Inter' }}
           />
-        )}
+        )} */}
       </PieChart>
     </ResponsiveContainer>
   )

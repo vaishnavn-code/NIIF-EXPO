@@ -288,8 +288,8 @@ def get_token(req: AuthRequest):
         "env":          f"{req.sap_sid.upper()}/{req.sap_client}",
     }
 
-REACT_APP_URL = "http://localhost:5174/"
-
+REACT_APP_URL = "http://localhost:5173/"
+ 
 @app.post("/session/create")
 def session_create(
     req: SessionCreateRequest,

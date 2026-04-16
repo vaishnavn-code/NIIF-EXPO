@@ -8,6 +8,7 @@ import Borrowers from './pages/Borrowers'
 import Transactions from './pages/Transactions'
 import { Spinner, ErrorMsg } from './components/ui/helpers'
 import { useDashboardData } from './hooks/useDashboardData'
+import mockData from './data/mockOverview.json'
 
 const PAGE_TITLES = {
   overview:     'Portfolio Overview',
@@ -42,7 +43,7 @@ export default function App() {
     }
     
     switch (page) {
-      case 'overview':     return <Overview     data={data} />
+      case 'overview':     return <Overview     data={mockData} />
       case 'exposure':     return <Exposure     computed={computed} />
       case 'rates':        return <Rates        data={data} />
       case 'borrowers':    return <Borrowers    computed={computed} />
