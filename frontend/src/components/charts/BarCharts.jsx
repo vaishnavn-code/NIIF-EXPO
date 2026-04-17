@@ -51,11 +51,12 @@ export function VerticalBar({
             return (
               <text
                 x={x}
-                y={y + 8}
+                y={y + 14}
                 textAnchor="middle"
                 fill="var(--text-muted)"
                 fontSize={10}
                 fontFamily="Inter"
+                transform={`rotate(-35, ${x}, ${y})`}
               >
                 {words.slice(0, 2).map((word, i) => (
                   <tspan key={i} x={x} dy={i === 0 ? 0 : 12}>

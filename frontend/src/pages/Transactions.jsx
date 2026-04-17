@@ -122,6 +122,29 @@ export default function Transactions({ data }) {
     },
   ];
 
+  const loanSizeData = Object.entries(
+    charts["Loan Size Distribution"]?.values || {},
+  ).map(([label, value]) => ({
+    label,
+    count: Number(value),
+  }));
+
+  // ================= QUARTERLY SANCTION =================
+  const quarterlyDataRaw = Object.entries(
+    charts["Quaterly Sanction Volume"]?.values || {},
+  ).map(([quarter, v]) => ({
+    quarter,
+    value: +(v.sanction_amount / 1e9).toFixed(2), // ₹ Bn
+  }));
+
+  // 🔥 SORT PROPERLY (VERY IMPORTANT)
+  const quarterlyData = quarterlyDataRaw.sort((a, b) => {
+    const [yA, qA] = [a.quarter.slice(0, 4), a.quarter.slice(5)];
+    const [yB, qB] = [b.quarter.slice(0, 4), b.quarter.slice(5)];
+
+    return yA === yB ? qA.localeCompare(qB) : yA - yB;
+  });
+
   return (
     <div>
       <div className="section-label">Transaction Analytics</div>
@@ -138,7 +161,7 @@ export default function Transactions({ data }) {
       </div>
 
       {/* GROUP CHART */}
-      <div className="chart-card">
+      {/* <div className="chart-card">
         <div className="chart-title">Top Groups — Sanction vs Principal</div>
         <div className="chart-subtitle">₹ BN</div>
 
@@ -153,13 +176,40 @@ export default function Transactions({ data }) {
           ]}
           height={300}
         />
+      </div> */}
+
+      {/* LOAN SIZE DISTRIBUTION */}
+      <div className="two-col">
+        <div className="chart-card">
+          <div className="chart-title">Loan Size Distribution</div>
+          <div className="chart-subtitle">NO. OF LOANS BY SIZE BAND</div>
+
+          <VerticalBar
+            data={loanSizeData}
+            dataKey="count"
+            nameKey="label"
+            height={260}
+          />
+        </div>
       </div>
 
+      <div className="chart-card">
+        <div className="chart-title">Product Type</div>
+        <DonutChart data={productDonut} height={220} />
+      </div>
       {/* DONUTS */}
       <div className="two-col">
         <div className="chart-card">
-          <div className="chart-title">Product Type</div>
-          <DonutChart data={productDonut} height={220} />
+          <div className="chart-title">Quarterly Sanction Volume</div>
+          <div className="chart-subtitle">₹ BN</div>
+
+          <VerticalBar
+            data={quarterlyData}
+            dataKey="value"
+            nameKey="quarter"
+            height={260}
+            formatter={(v) => `₹${v}Bn`}
+          />
         </div>
 
         <div className="chart-card">
