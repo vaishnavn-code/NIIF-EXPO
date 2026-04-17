@@ -1,3 +1,5 @@
+import React from "react"
+
 export default function Header({ title, darkMode, onToggleDark }) {
   return (
     <div className="header-bar">

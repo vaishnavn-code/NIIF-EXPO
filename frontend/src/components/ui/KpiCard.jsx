@@ -11,6 +11,7 @@
  *   badge       { label, variant }  — optional badge beside value
  *   icon        JSX      — optional SVG icon element
  */
+import React from "react"
 export default function KpiCard({
   label, value, sub, footer,
   sparkPct, accent = 'c1',

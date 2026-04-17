@@ -1,5 +1,6 @@
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { CHART_PALETTE } from '../../utils/constants'
+import React from 'react'
 
 export default function DonutChart({
   data,           // Array<{ name, value }>

@@ -1,3 +1,5 @@
+import React from "react";
+
 import {
   BarChart,
   ComposedChart,
@@ -31,7 +33,7 @@ export function VerticalBar({
   height = 280,
   unit = "",
   formatter,
-  barSize = 32, 
+  barSize = 32,
 }) {
   return (
     <ResponsiveContainer width="100%" height={height}>
@@ -39,13 +41,30 @@ export function VerticalBar({
         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
         <XAxis
           dataKey={nameKey}
-          tick={{ fontSize: 9, fill: "var(--text-muted)", fontFamily: "Inter" }}
-          tickLine={false}
           interval={0}
-          angle={-30}
-          textAnchor="end"
-          height={48}
+          tickLine={false}
           axisLine={false}
+          height={60}
+          tick={({ x, y, payload }) => {
+            const words = payload.value.split(" ");
+
+            return (
+              <text
+                x={x}
+                y={y + 8}
+                textAnchor="middle"
+                fill="var(--text-muted)"
+                fontSize={10}
+                fontFamily="Inter"
+              >
+                {words.slice(0, 2).map((word, i) => (
+                  <tspan key={i} x={x} dy={i === 0 ? 0 : 12}>
+                    {word}
+                  </tspan>
+                ))}
+              </text>
+            );
+          }}
         />
         <YAxis
           tick={{
@@ -67,11 +86,31 @@ export function VerticalBar({
             <stop offset="0%" stopColor="rgba(71, 136, 208, 1)" />
             <stop offset="100%" stopColor="rgba(144,202,249,0.22)" />
           </linearGradient>
+
+          <linearGradient id="intGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="rgba(40, 186, 204, 1)" />
+            <stop offset="100%" stopColor="rgba(40, 186, 204, 0.2)" />
+          </linearGradient>
+
+          <linearGradient id="rateGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="rgba(168, 105, 194, 1)" />
+            <stop offset="100%" stopColor="rgba(168, 105, 194, 0.2)" />
+          </linearGradient>
+
+          <linearGradient id="ratePurpleGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="rgba(145, 67, 177, 1)" />
+            <stop offset="100%" stopColor="rgba(145, 67, 177, 0.2)" />
+          </linearGradient>
+
+          <linearGradient id="tenorOrangeGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="rgba(251, 159, 42, 1)" />
+            <stop offset="100%" stopColor="rgba(251, 159, 42, 0.2)" />
+          </linearGradient>
         </defs>
 
         <Bar
           dataKey={dataKey}
-          fill="url(#tenorGradient)"
+          fill={color?.startsWith("url") ? color : "url(#tenorGradient)"}
           radius={[4, 4, 0, 0]}
           maxBarSize={barSize}
           activeBar={false} // ✅ ADD THIS
@@ -97,8 +136,17 @@ export function HorizontalBar({
       <BarChart
         data={data}
         layout="vertical"
-        margin={{ top: 4, right: 40, left: 4, bottom: 4 }}
+        barCategoryGap="25%"
+        margin={{ top: 10, right: 20, left: 20, bottom: 10 }}
       >
+        <defs>
+          <linearGradient id="hbarBlueGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="rgba(220, 238, 253, 1)" />{" "}
+            {/* light */}
+            <stop offset="100%" stopColor="rgba(111, 164, 221, 1)" />{" "}
+            {/* dark */}
+          </linearGradient>
+        </defs>
         <CartesianGrid
           strokeDasharray="3 3"
           stroke="var(--border)"
@@ -118,9 +166,15 @@ export function HorizontalBar({
         <YAxis
           type="category"
           dataKey={nameKey}
-          width={90}
-          tick={{ fontSize: 9, fill: "var(--text-muted)", fontFamily: "Inter" }}
+          width={140}
+          tick={{
+            fontSize: 11,
+            fill: "#5f7ea3",
+            fontFamily: "Inter",
+            textAnchor: "end",
+          }}
           tickLine={false}
+          axisLine={false}
         />
         <Tooltip
           {...TOOLTIP_STYLE}
@@ -129,7 +183,7 @@ export function HorizontalBar({
         />
         <Bar
           dataKey={dataKey}
-          fill={color}
+          fill="url(#hbarBlueGrad)"
           radius={[0, 4, 4, 0]}
           maxBarSize={18}
         >
@@ -177,12 +231,30 @@ export function GroupedBar({
         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
         <XAxis
           dataKey={nameKey}
-          axisLine={false}
-          tick={{ fontSize: 9, fill: "var(--text-muted)", fontFamily: "Inter" }}
+          interval={0}
           tickLine={false}
-          angle={-30}
-          textAnchor="end"
-          height={48}
+          axisLine={false}
+          height={50}
+          tick={({ x, y, payload }) => {
+            const words = payload.value.split(" ");
+
+            return (
+              <text
+                x={x}
+                y={y + 8}
+                textAnchor="middle"
+                fill="var(--text-muted)"
+                fontSize={10}
+                fontFamily="Inter"
+              >
+                {words.slice(0, 2).map((word, i) => (
+                  <tspan key={i} x={x} dy={i === 0 ? 0 : 12}>
+                    {word}
+                  </tspan>
+                ))}
+              </text>
+            );
+          }}
         />
         <YAxis
           tick={{

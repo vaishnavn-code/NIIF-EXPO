@@ -2,9 +2,11 @@
 export const NAV_PAGES = [
   { id: 'overview',     label: 'Overview',         section: 'Navigation' },
   { id: 'exposure',     label: 'Exposure',          section: 'Navigation' },
+  { id: 'loans', label: 'Loans',      section: 'Data Views' },
   { id: 'rates',        label: 'Interest & Rates',  section: 'Data Views' },
   { id: 'borrowers',    label: 'Borrowers',         section: 'Data Views' },
   { id: 'transactions', label: 'Transactions',      section: 'Data Views' },
+
 ]
 
 /** Recharts color palette */

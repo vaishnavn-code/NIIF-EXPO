@@ -11,6 +11,7 @@ import { Spinner, ErrorMsg } from "../components/ui/helpers";
 import { useInsights } from "../hooks/useDashboardData";
 import { fmt } from "../utils/formatters";
 import DonutLegend from "../components/charts/DonutLegend";
+import React from "react";
 
 export default function Overview({ data }) {
   const {
@@ -51,9 +52,7 @@ export default function Overview({ data }) {
 
   const kpi = data?.overview?.kpi || {};
   const productDonut = useMemo(() => {
-    const productChart = data?.overview?.charts?.find(
-      (c) => c.title === "Product type",
-    );
+    const productChart = data?.overview?.charts?.["Product Type"];
 
     if (!productChart) return [];
 
@@ -64,9 +63,7 @@ export default function Overview({ data }) {
   }, [data]);
 
   const tenorChartData = useMemo(() => {
-    const tenorChart = data?.overview?.charts?.find(
-      (c) => c.title === "Tenor Distribution",
-    );
+    const tenorChart = data?.overview?.charts?.["Tenor Distribution"];
 
     if (!tenorChart) return [];
 
@@ -77,9 +74,7 @@ export default function Overview({ data }) {
   }, [data]);
 
   const rateChartData = useMemo(() => {
-    const rateChart = data?.overview?.charts?.find(
-      (c) => c.title === "Rate Distribution",
-    );
+    const rateChart = data?.overview?.charts?.["Rate Distribution"];
 
     if (!rateChart) return [];
 
@@ -90,9 +85,7 @@ export default function Overview({ data }) {
   }, [data]);
 
   const collectionDonut = useMemo(() => {
-    const collectionChart = data?.overview?.charts?.find(
-      (c) => c.title === "Collections Overview",
-    );
+    const collectionChart = data?.overview?.charts?.["Collections Overview"];
 
     if (!collectionChart) return [];
 
@@ -113,25 +106,23 @@ export default function Overview({ data }) {
   }, [data]);
 
   const topGroupsOutstanding = useMemo(() => {
-    const groupChart = data?.overview?.charts?.find(
-      (c) => c.title === "Group by Outsanding & Sanction",
-    );
+  const groupChart =
+    data?.overview?.charts?.["Group by Outstanding & Sanction"];
 
-    if (!groupChart) return [];
+  if (!groupChart) return [];
 
-    return groupChart.values
-      .map((item) => ({
-        label: item.bp_group,
-        count: parseFloat(item.outstanding || 0),
-      }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, topN);
-  }, [data, topN]);
+  return groupChart.values
+    .map((item) => ({
+      label: item.bp_group,
+      count: parseFloat(item.outstanding || 0),
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, topN);
+}, [data, topN]);
 
   const topGroupsDual = useMemo(() => {
-    const groupChart = data?.overview?.charts?.find(
-      (c) => c.title === "Group by Outsanding & Sanction",
-    );
+    const groupChart =
+      data?.overview?.charts?.["Group by Outstanding & Sanction"];
 
     if (!groupChart) return [];
 
@@ -146,56 +137,54 @@ export default function Overview({ data }) {
   }, [data]);
 
   const disbursementData = useMemo(() => {
-  const chart = data?.overview?.charts?.find(
-    (c) => c.title === "Disbursements Activity"
-  );
+    const chart = data?.overview?.charts?.["Disbursements Activity"];
 
-  if (!chart) return [];
+    if (!chart) return [];
 
-  const raw = Object.entries(chart.values).map(([date, val]) => ({
-    date,
-    label: date,
-    loan: +val.loan_count,
-    sanction: +val.sanction_amount,
-    outstanding: +val.outstanding,
-    quarter: val.Quater,
-    year: val.Year,
-  }));
-
-  // ✅ HANDLE AUTO
-  const mode = viewMode === "auto" ? "quarterly" : viewMode;
-
-  if (mode === "monthly") {
-    return raw.map((r) => ({
-      name: r.date,
-      loan: r.loan,
-      sanction: r.sanction,
-      outstanding: r.outstanding,
+    const raw = Object.entries(chart.values).map(([date, val]) => ({
+      date,
+      label: date,
+      loan: +val.loan_count,
+      sanction: +val.sanction_amount,
+      outstanding: +val.outstanding,
+      quarter: val.Quater,
+      year: val.Year,
     }));
-  }
 
-  const groupBy = (key) => {
-    const map = {};
-    raw.forEach((r) => {
-      const k = r[key];
+    // ✅ HANDLE AUTO
+    const mode = viewMode === "auto" ? "quarterly" : viewMode;
 
-      if (!map[k]) {
-        map[k] = { name: k, loan: 0, sanction: 0, outstanding: 0 };
-      }
+    if (mode === "monthly") {
+      return raw.map((r) => ({
+        name: r.date,
+        loan: r.loan,
+        sanction: r.sanction,
+        outstanding: r.outstanding,
+      }));
+    }
 
-      map[k].loan += r.loan;
-      map[k].sanction += r.sanction;
-      map[k].outstanding += r.outstanding;
-    });
+    const groupBy = (key) => {
+      const map = {};
+      raw.forEach((r) => {
+        const k = r[key];
 
-    return Object.values(map);
-  };
+        if (!map[k]) {
+          map[k] = { name: k, loan: 0, sanction: 0, outstanding: 0 };
+        }
 
-  if (mode === "quarterly") return groupBy("quarter");
-  if (mode === "yearly") return groupBy("year");
+        map[k].loan += r.loan;
+        map[k].sanction += r.sanction;
+        map[k].outstanding += r.outstanding;
+      });
 
-  return [];
-}, [data, viewMode]);
+      return Object.values(map);
+    };
+
+    if (mode === "quarterly") return groupBy("quarter");
+    if (mode === "yearly") return groupBy("year");
+
+    return [];
+  }, [data, viewMode]);
 
   // const rateSparkPct =
   //   c.max_rate > c.min_rate
