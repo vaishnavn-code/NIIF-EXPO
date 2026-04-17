@@ -527,6 +527,8 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
     total_int_rec = 0.0
     total_upcoming_int = 0.0
     total_int_due = 0.0
+    tl_os_amt = 0.0
+    deb_os_amt = 0.0
     customer_set = set()
     disb_set = set()
     fy_2026_disb_set = set()
@@ -601,7 +603,12 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
         prd_desc = str(row.get("Prd Type Desc") or "")
         if prd_desc:
             product_counts[prd_desc] = product_counts.get(prd_desc, 0) + 1
+        prd_desc_upper = prd_desc.upper()
 
+        if "TL" in prd_desc_upper:
+            tl_os_amt += os_amt
+        elif "DEB" in prd_desc_upper:
+            deb_os_amt += os_amt
         # Rate distribution
         if interest_rate < 7:
             rate_buckets["<7 %"] += 1
@@ -877,11 +884,11 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
                 },
                 "TL_Disbursements": {
                     "Title": str(tl_count),
-                    "Subtitle": "TL Disbursements"
+                    "Subtitle": str(round(tl_os_amt / 10000000, 2))
                 },
                 "DEB_Disbursements": {
                     "Title": str(deb_count),
-                    "Subtitle": "DEB Disbursements"
+                    "Subtitle": str(round(deb_os_amt / 10000000, 2)) 
                 }
             },
             "table": exposure_table

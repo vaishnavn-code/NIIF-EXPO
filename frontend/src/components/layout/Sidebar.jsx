@@ -32,7 +32,7 @@ export default function Sidebar({ activePage, onNavigate }) {
       <div style={styles.logoWrap}>
         <img src={FSlogo} alt="TFSIN Logo" style={{ width: 40, height: 40, borderRadius: 9 }} />
         <div>
-          <div style={styles.logoText}>USER DASHBOARD</div>
+          <div style={styles.logoText}>NIIF DASHBOARD</div>
           <div style={styles.logoSub}>A Product by Fourth Signal</div>
         </div>
       </div>
