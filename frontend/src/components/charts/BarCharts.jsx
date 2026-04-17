@@ -107,6 +107,11 @@ export function VerticalBar({
             <stop offset="0%" stopColor="rgba(251, 159, 42, 1)" />
             <stop offset="100%" stopColor="rgba(251, 159, 42, 0.2)" />
           </linearGradient>
+
+          <linearGradient id="principalGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="rgba(77, 145, 81, 1)" />
+            <stop offset="100%" stopColor="rgba(77, 145, 81, 0.2)" />
+          </linearGradient>
         </defs>
 
         <Bar
