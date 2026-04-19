@@ -3,6 +3,7 @@ import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer,
 } from 'recharts'
+import { buildUnifiedTooltip } from './ChartTooltip'
 
 const GRANULARITIES = [
   { key: 'yearly',    label: 'Yearly' },
@@ -65,13 +66,10 @@ export default function ActivityChart({ timeseries }) {
             axisLine={false}
           />
           <Tooltip
-            contentStyle={{
-              background: 'var(--white)',
-              border: '1px solid var(--border2)',
-              borderRadius: 8,
-              fontSize: 11,
-              fontFamily: 'Inter',
-            }}
+            content={buildUnifiedTooltip({
+              valueFormatter: (value, _name, entry) =>
+                entry.dataKey === 'Loans' ? value : `Rs ${value} Bn`,
+            })}
           />
           <Legend wrapperStyle={{ fontSize: 10, fontFamily: 'Inter' }} />
           <Bar yAxisId="left" dataKey="Loans" fill="rgba(21,101,192,0.85)" radius={[3,3,0,0]} maxBarSize={28} />

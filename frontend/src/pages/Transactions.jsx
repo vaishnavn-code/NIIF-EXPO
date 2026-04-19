@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import {
   VerticalBar,
+  VerticalBarWithLineTransactions,
 } from "../components/charts/BarCharts";
 import DonutChart from "../components/charts/DonutChart";
 import DataTable from "../components/ui/DataTable";
@@ -8,79 +9,6 @@ import KpiCard from "../components/ui/KpiCard";
 import { TopNSelector } from "../components/ui/helpers";
 import { fmt } from "../utils/formatters";
 import { TOP_N_OPTIONS } from "../utils/constants";
-
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  Legend,
-} from "recharts";
-
-function BarLineChart({ data }) {
-  return (
-    <ResponsiveContainer width="100%" height={300}>
-      <BarChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-
-        <XAxis dataKey="year" />
-
-        <YAxis
-          yAxisId="left"
-          tick={{ fontSize: 10 }}
-          label={{
-            value: "No. of Loans",
-            angle: -90,
-            position: "insideLeft",
-          }}
-        />
-
-        <YAxis
-          yAxisId="right"
-          orientation="right"
-          tick={{ fontSize: 10 }}
-          label={{
-            value: "Sanction (₹ Bn)",
-            angle: 90,
-            position: "insideRight",
-          }}
-        />
-
-        <Tooltip
-          formatter={(v, name) =>
-            name.includes("Sanction")
-              ? [`₹${v} Bn`, name]
-              : [v, name]
-          }
-        />
-
-        <Legend />
-
-        <Bar
-          yAxisId="left"
-          dataKey="loans"
-          fill="#4f8cc9"
-          name="No. of Loans"
-          radius={[4, 4, 0, 0]}
-        />
-
-        <Line
-          yAxisId="right"
-          type="monotone"
-          dataKey="sanction"
-          stroke="#00acc1"
-          strokeWidth={2}
-          dot={{ r: 3 }}
-          name="Sanction (₹ Bn)"
-        />
-      </BarChart>
-    </ResponsiveContainer>
-  );
-}
 
 export default function Transactions({ data }) {
   const txn = data?.transactions || {};
@@ -98,7 +26,7 @@ export default function Transactions({ data }) {
 
   // Loan Size
   const loanSizeData = Object.entries(
-    charts["Loan Size Distribution"]?.values || {}
+    charts["Loan Size Distribution"]?.values || {},
   ).map(([label, value]) => ({
     label,
     count: Number(value),
@@ -106,7 +34,7 @@ export default function Transactions({ data }) {
 
   // Yearly
   const yearlyData = Object.entries(
-    charts["Disbursments by Year"]?.values || {}
+    charts["Disbursments by Year"]?.values || {},
   )
     .map(([year, v]) => ({
       year,
@@ -117,7 +45,7 @@ export default function Transactions({ data }) {
 
   // Quarterly
   const quarterlyData = Object.entries(
-    charts["Quaterly Sanction Volume"]?.values || {}
+    charts["Quaterly Sanction Volume"]?.values || {},
   )
     .map(([quarter, v]) => ({
       quarter,
@@ -126,19 +54,19 @@ export default function Transactions({ data }) {
     .sort((a, b) => a.quarter.localeCompare(b.quarter));
 
   // Donuts
-  const productDonut = Object.entries(
-    charts["Product Type"]?.values || {}
-  ).map(([name, value]) => ({
-    name,
-    value,
-  }));
+  const productDonut = Object.entries(charts["Product Type"]?.values || {}).map(
+    ([name, value]) => ({
+      name,
+      value,
+    }),
+  );
 
-  const rateDonut = Object.entries(
-    charts["Rate_Band_Split"]?.values || {}
-  ).map(([name, value]) => ({
-    name,
-    value,
-  }));
+  const rateDonut = Object.entries(charts["Rate_Band_Split"]?.values || {}).map(
+    ([name, value]) => ({
+      name,
+      value,
+    }),
+  );
 
   // %
   const totalRate = rateDonut.reduce((s, r) => s + r.value, 0);
@@ -150,9 +78,7 @@ export default function Transactions({ data }) {
   const totalProduct = productDonut.reduce((s, r) => s + r.value, 0);
   const productWithPercent = productDonut.map((r) => ({
     ...r,
-    percent: totalProduct
-      ? ((r.value / totalProduct) * 100).toFixed(1)
-      : 0,
+    percent: totalProduct ? ((r.value / totalProduct) * 100).toFixed(1) : 0,
   }));
 
   // Top Groups
@@ -191,9 +117,7 @@ export default function Transactions({ data }) {
       key: "outstanding_amt",
       label: "Outstanding",
       render: (v) => (
-        <span style={{ color: "#1565c0", fontWeight: 700 }}>
-          {fmt.mn(v)}
-        </span>
+        <span style={{ color: "#1565c0", fontWeight: 700 }}>{fmt.mn(v)}</span>
       ),
     },
     { key: "rate", label: "Rate" },
@@ -207,49 +131,199 @@ export default function Transactions({ data }) {
       <div className="section-label">Transaction Analytics</div>
 
       <div className="four-col">
-        <KpiCard label="Total Transactions" value={totalTxn} />
-        <KpiCard label="Avg Sanction" value={`₹${fmt.mn(avgSanction)}`} />
-        <KpiCard label="Principal Received" value={`₹${fmt.bn(principalRecv)}`} />
-        <KpiCard label="Current FY Disb" value={currentFY} />
+        <KpiCard label="Total Transactions" value={totalTxn} iconName="document"
+          badge={{
+            label: "Volume",
+            bgColor: "#E8F1FF",
+            textColor: "#1D4ED8",
+          }}/>
+        <KpiCard label="Avg Sanction" value={`₹${fmt.mn(avgSanction)}`} iconName="dollar"
+          badge={{
+            label: "Avg Size",
+            bgColor: "#E0F7FA",
+            textColor: "#43A047",
+          }} />
+        <KpiCard
+          label="Principal Received"
+          value={`₹${fmt.bn(principalRecv)}`}
+          iconName="storage"
+          badge={{
+            label: "Recipts",
+            bgColor: "#FFF3E0",
+            textColor: "#FB8C00",
+          }}
+
+        />
+        <KpiCard label="Current FY Disb" value={currentFY} iconName="graph"
+          badge={{
+            label: "PIPELINE",
+            bgColor: "#F3E5F5",
+            textColor: "#7B1FA2",
+          }} />
       </div>
 
       <div className="two-col">
-        <div className="chart-card">
-          <div className="chart-title">Loan Size Distribution</div>
-          <VerticalBar data={loanSizeData} dataKey="count" nameKey="label" />
-        </div>
-
         <div className="chart-card">
           <div className="chart-title">Disbursements by Year</div>
-          <BarLineChart data={yearlyData} />
+          <div className="chart-subtitle">
+            LOAN COUNT (BARS) vs SANCTION ₹ BN (LINE)
+          </div>
+          <VerticalBarWithLineTransactions data={yearlyData} height={350} />
+        </div>
+
+        <div className="chart-card">
+          <div className="chart-title">Loan Size Distribution</div>
+          <div className="chart-subtitle">SANCTION AMOUNT BUCKETS</div>
+          <VerticalBar
+            data={loanSizeData}
+            dataKey="count"
+            nameKey="label"
+            height={400}
+          />
         </div>
       </div>
 
       <div className="two-col">
         <div className="chart-card">
+          <div className="chart-title">Quarterly Sanction Volume</div>
+          <div className="chart-subtitle">SANCTION ₹ BN — ALL QUARTERS</div>
           <VerticalBar data={quarterlyData} dataKey="value" nameKey="quarter" />
         </div>
 
         <div className="chart-card">
+          <div className="chart-title">Rate Band Split</div>
+          <div className="chart-subtitle">LOANS BY INTEREST RATE BUCKET</div>
           <DonutChart data={rateDonut} />
+
+          {/* ✅ LEGEND */}
+          <div
+            style={{
+              marginTop: 16,
+              borderTop: "1px solid var(--border)",
+              paddingTop: 12,
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "8px 20px",
+            }}
+          >
+            {rateWithPercent.map((r, i) => (
+              <div
+                key={r.name}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  fontSize: 12,
+                }}
+              >
+                {/* LEFT SIDE */}
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      background: [
+                        "#1e88e5",
+                        "#42a5f5",
+                        "#90caf9",
+                        "#64b5f6",
+                        "#fb8c00",
+                        "#ef6c00",
+                        "#e53935",
+                      ][i % 7],
+                    }}
+                  />
+                  <span>{r.name}</span>
+                </div>
+
+                {/* RIGHT SIDE */}
+                <span style={{ fontWeight: 600 }}>{r.percent}%</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
       <div className="two-col">
         <div className="chart-card">
+          <div className="chart-title">Product Type Mix</div>
+          <div className="chart-subtitle">TL vs DEB — BY COUNT</div>
           <DonutChart data={productDonut} />
+          <div
+            style={{
+              marginTop: 16,
+              borderTop: "1px solid var(--border)",
+              paddingTop: 12,
+              display: "flex",
+              justifyContent: "space-between",
+              gap: "40px",
+              fontSize: 12,
+            }}
+          >
+            {productWithPercent.map((p, i) => (
+              <div
+                key={p.name}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+              >
+                {/* COLOR DOT */}
+                <span
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: "50%",
+                    background: i === 0 ? "#1e88e5" : "#26a69a",
+                  }}
+                />
+
+                {/* LABEL */}
+                <span>{p.name}</span>
+
+                {/* % VALUE */}
+                <span style={{ fontWeight: 600 }}>{p.percent}%</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
       <div className="two-col">
         <div className="chart-card">
-          <TopNSelector options={TOP_N_OPTIONS} value={topN} onChange={setTopN} />
-          <VerticalBar data={topGroupsSanction} dataKey="value" nameKey="label" />
+          <div className="chart-title">Top Groups by Sanction</div>
+          <div className="chart-subtitle" style={{ marginBottom: "10px" }}>
+            ₹ BILLIONS
+          </div>
+          <TopNSelector
+            options={TOP_N_OPTIONS}
+            value={topN}
+            onChange={setTopN}
+          />
+          <VerticalBar
+            data={topGroupsSanction}
+            dataKey="value"
+            nameKey="label"
+          />
         </div>
 
         <div className="chart-card">
-          <TopNSelector options={TOP_N_OPTIONS} value={topN} onChange={setTopN} />
-          <VerticalBar data={topGroupsPrincipal} dataKey="value" nameKey="label" />
+          <div className="chart-title">Top Groups by Collected</div>
+          <div className="chart-subtitle" style={{ marginBottom: "10px" }}>
+            ₹ BILLIONS
+          </div>
+          <TopNSelector
+            options={TOP_N_OPTIONS}
+            value={topN}
+            onChange={setTopN}
+          />
+          <VerticalBar
+            data={topGroupsPrincipal}
+            dataKey="value"
+            nameKey="label"
+          />
         </div>
       </div>
 

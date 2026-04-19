@@ -9,20 +9,12 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  Legend,
   ResponsiveContainer,
   Cell,
   LabelList,
 } from "recharts";
-
-const TOOLTIP_STYLE = {
-  contentStyle: {
-    background: "var(--white)",
-    border: "1px solid var(--border2)",
-    borderRadius: 8,
-    fontSize: 11,
-    fontFamily: "Inter",
-  },
-};
+import { buildUnifiedTooltip } from "./ChartTooltip";
 
 /** Vertical bar chart */
 export function VerticalBar({
@@ -78,9 +70,11 @@ export function VerticalBar({
           tickFormatter={formatter}
         />
         <Tooltip
-          {...TOOLTIP_STYLE}
           cursor={{ fill: "transparent" }}
-          formatter={(v) => [formatter ? formatter(v) : `${v}${unit}`, dataKey]}
+          content={buildUnifiedTooltip({
+            valueFormatter: (value) =>
+              formatter ? formatter(value) : `${value}${unit}`,
+          })}
         />
         <defs>
           <linearGradient id="tenorGradient" x1="0" y1="0" x2="0" y2="1">
@@ -183,9 +177,11 @@ export function HorizontalBar({
           axisLine={false}
         />
         <Tooltip
-          {...TOOLTIP_STYLE}
           cursor={{ fill: "transparent" }} // ✅ ADD THIS
-          formatter={(v) => [formatter ? formatter(v) : `${v}${unit}`, dataKey]}
+          content={buildUnifiedTooltip({
+            valueFormatter: (value) =>
+              formatter ? formatter(value) : `${value}${unit}`,
+          })}
         />
         <Bar
           dataKey={dataKey}
@@ -272,9 +268,11 @@ export function GroupedBar({
           axisLine={false}
         />
         <Tooltip
-          {...TOOLTIP_STYLE}
           cursor={{ fill: "transparent" }} // ✅ ADD THIS
-          formatter={(v) => (formatter ? formatter(v) : `${v}${unit}`)}
+          content={buildUnifiedTooltip({
+            valueFormatter: (value) =>
+              formatter ? formatter(value) : `${value}${unit}`,
+          })}
         />
         {series.map((s) => (
           <Bar
@@ -291,24 +289,21 @@ export function GroupedBar({
   );
 }
 
-export function VerticalBarWithLine({ data, height = 320 }) {
+export function VerticalBarWithLineOverview({ data, height = 320 }) {
   return (
     <ResponsiveContainer width="100%" height={height}>
       <ComposedChart
         data={data}
-        margin={{ top: 25, right: 20, left: 0, bottom: 4 }}
-        barCategoryGap="33%"
+        margin={{ top: 22, right: 16, left: 8, bottom: 2 }}
+        barCategoryGap="30%"
         barGap={2}
       >
-        {/* ✅ Gradients */}
         <defs>
-          {/* Loans (dark blue) */}
           <linearGradient id="loanGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="rgba(21,101,192,0.88)" />
-            <stop offset="100%" stopColor="rgba(144,202,249,0.22)" />
+            <stop offset="0%" stopColor="rgba(21,101,192,0.90)" />
+            <stop offset="100%" stopColor="rgba(144,202,249,0.24)" />
           </linearGradient>
 
-          {/* Sanction (light blue) */}
           <linearGradient id="sanctionGrad" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="rgba(144,202,249,0.72)" />
             <stop offset="100%" stopColor="rgba(144,202,249,0.10)" />
@@ -316,15 +311,12 @@ export function VerticalBarWithLine({ data, height = 320 }) {
         </defs>
 
         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-
-        {/* X */}
         <XAxis
           dataKey="name"
           axisLine={false}
-          tick={{ fontSize: 9, fill: "#6a9cbf", fontFamily: "Inter" }}
+          tickLine={false}
+          tick={{ fontSize: 10, fill: "#6a9cbf", fontFamily: "Inter" }}
         />
-
-        {/* LEFT AXIS */}
         <YAxis
           yAxisId="left"
           tick={{ fontSize: 10, fill: "#6a9cbf" }}
@@ -337,8 +329,6 @@ export function VerticalBarWithLine({ data, height = 320 }) {
             style: { fontSize: 9, fill: "#6a9cbf" },
           }}
         />
-
-        {/* RIGHT AXIS */}
         <YAxis
           yAxisId="right"
           orientation="right"
@@ -353,33 +343,40 @@ export function VerticalBarWithLine({ data, height = 320 }) {
           }}
         />
 
-        <Tooltip cursor={{ fill: "transparent" }} />
+        <Tooltip
+          cursor={{ fill: "transparent" }}
+          content={buildUnifiedTooltip({
+            valueFormatter: (value, _name, entry) =>
+              entry.dataKey === "loan" ? value : `Rs ${value} Bn`,
+          })}
+        />
 
-        {/* 🔵 Loans */}
         <Bar
           yAxisId="left"
           dataKey="loan"
+          name="No. of Loans"
           fill="url(#loanGrad)"
-          radius={[4, 4, 0, 0]}
-          maxBarSize={28}
+          radius={[5, 5, 0, 0]}
+          maxBarSize={32}
         />
 
-        {/* 🔷 Sanction */}
         <Bar
           yAxisId="left"
           dataKey="sanction"
+          name="Sanction (Rs Bn)"
           fill="url(#sanctionGrad)"
-          radius={[4, 4, 0, 0]}
-          maxBarSize={28}
+          radius={[5, 5, 0, 0]}
+          maxBarSize={32}
         />
 
-        {/* 🟢 Outstanding line */}
         <Line
           yAxisId="right"
           type="monotone"
           dataKey="outstanding"
+          name="Outstanding (Rs Bn)"
           stroke="#00acc1"
           strokeWidth={2.5}
+          tension={0.38}
           dot={{
             r: 4,
             stroke: "#fff",
@@ -387,8 +384,115 @@ export function VerticalBarWithLine({ data, height = 320 }) {
             fill: "#00acc1",
           }}
           activeDot={{ r: 5 }}
+          fill="rgba(0,172,193,0.07)"
+          isAnimationActive={false}
         />
       </ComposedChart>
     </ResponsiveContainer>
   );
+}
+
+export function VerticalBarWithLineTransactions({ data, height = 320 }) {
+  return (
+    <ResponsiveContainer width="100%" height={height}>
+      <ComposedChart
+        data={data}
+        margin={{ top: 22, right: 16, left: 8, bottom: 2 }}
+        barCategoryGap="30%"
+        barGap={2}
+      >
+        <defs>
+          <linearGradient id="loanGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="rgba(21,101,192,0.90)" />
+            <stop offset="100%" stopColor="rgba(144,202,249,0.24)" />
+          </linearGradient>
+        </defs>
+
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+        <XAxis
+          dataKey="year"
+          axisLine={false}
+          tickLine={false}
+          tick={{ fontSize: 10, fill: "#6a9cbf", fontFamily: "Inter" }}
+        />
+        <YAxis
+          yAxisId="left"
+          tick={{ fontSize: 10, fill: "#6a9cbf" }}
+          axisLine={false}
+          tickLine={false}
+          label={{
+            value: "No. of Loans",
+            angle: -90,
+            position: "insideLeft",
+            style: { fontSize: 9, fill: "#6a9cbf" },
+          }}
+        />
+        <YAxis
+          yAxisId="right"
+          orientation="right"
+          tick={{ fontSize: 10, fill: "#00acc1" }}
+          axisLine={false}
+          tickLine={false}
+          label={{
+            value: "Sanction (Rs Bn)",
+            angle: 90,
+            position: "insideRight",
+            style: { fontSize: 9, fill: "#00acc1" },
+          }}
+        />
+
+        <Tooltip
+          cursor={{ fill: "transparent" }}
+          content={buildUnifiedTooltip({
+            valueFormatter: (value, _name, entry) =>
+              entry.dataKey === "loans" ? value : `Rs ${value} Bn`,
+          })}
+        />
+
+        <Legend
+          verticalAlign="top"
+          align="center"
+          iconType="rect"
+          wrapperStyle={{
+            fontSize: 10,
+            color: "#6a9cbf",
+            fontFamily: "Inter",
+          }}
+        />
+
+        <Bar
+          yAxisId="left"
+          dataKey="loans"
+          name="No. of Loans"
+          fill="url(#loanGrad)"
+          radius={[5, 5, 0, 0]}
+          maxBarSize={32}
+        />
+
+        <Line
+          yAxisId="right"
+          type="monotone"
+          dataKey="sanction"
+          name="Sanction (Rs Bn)"
+          stroke="#00acc1"
+          strokeWidth={2.5}
+          tension={0.38}
+          dot={{
+            r: 4,
+            stroke: "#fff",
+            strokeWidth: 2,
+            fill: "#00acc1",
+          }}
+          activeDot={{ r: 5 }}
+          fill="rgba(0,172,193,0.07)"
+          isAnimationActive={false}
+        />
+      </ComposedChart>
+    </ResponsiveContainer>
+  );
+}
+
+// Backward-compatible alias.
+export function VerticalBarWithLine(props) {
+  return <VerticalBarWithLineOverview {...props} />;
 }

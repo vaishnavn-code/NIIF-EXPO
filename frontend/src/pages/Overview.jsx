@@ -5,7 +5,7 @@ import DonutChart from "../components/charts/DonutChart";
 import {
   VerticalBar,
   GroupedBar,
-  VerticalBarWithLine,
+  VerticalBarWithLineOverview,
 } from "../components/charts/BarCharts";
 import { Spinner, ErrorMsg } from "../components/ui/helpers";
 import { useInsights } from "../hooks/useDashboardData";
@@ -106,19 +106,19 @@ export default function Overview({ data }) {
   }, [data]);
 
   const topGroupsOutstanding = useMemo(() => {
-  const groupChart =
-    data?.overview?.charts?.["Group by Outstanding & Sanction"];
+    const groupChart =
+      data?.overview?.charts?.["Group by Outstanding & Sanction"];
 
-  if (!groupChart) return [];
+    if (!groupChart) return [];
 
-  return groupChart.values
-    .map((item) => ({
-      label: item.bp_group,
-      count: parseFloat(item.outstanding || 0),
-    }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, topN);
-}, [data, topN]);
+    return groupChart.values
+      .map((item) => ({
+        label: item.bp_group,
+        count: parseFloat(item.outstanding || 0),
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, topN);
+  }, [data, topN]);
 
   const topGroupsDual = useMemo(() => {
     const groupChart =
@@ -273,6 +273,12 @@ export default function Overview({ data }) {
           footer={kpi.Total_Sanction?.Footer}
           sparkPct={100}
           accent="c1"
+          iconName="dollar"
+          badge={{
+            label: "Sanctioned",
+            bgColor: "#E8F1FF",
+            textColor: "#1D4ED8",
+          }}
         />
 
         {/* <KpiCard
@@ -295,6 +301,12 @@ export default function Overview({ data }) {
           footer={kpi.Total_Exposure?.Footer}
           sparkPct={80}
           accent="c2"
+          iconName="trending"
+          badge={{
+            label: "Outstanding",
+            bgColor: "#E8F5E9",
+            textColor: "#43A047",
+          }}
         />
 
         {/* <KpiCard
@@ -317,6 +329,12 @@ export default function Overview({ data }) {
           footer={kpi.Principal_Recieved?.Footer}
           sparkPct={40}
           accent="c3"
+          iconName="personFolder"
+          badge={{
+            label: "Exposure",
+            bgColor: "#FFF3E0",
+            textColor: "#FB8C00",
+          }}
         />
 
         {/* <KpiCard
@@ -337,6 +355,12 @@ export default function Overview({ data }) {
           footer={kpi.Outstanding_Amount?.Footer}
           sparkPct={60}
           accent="c4"
+          iconName="graph"
+          badge={{
+            label: "Rate",
+            bgColor: "#F3E5F5",
+            textColor: "#7B1FA2",
+          }}
         />
       </div>
       <div className="section-label">Disbursement Activity Trend</div>
@@ -497,7 +521,7 @@ export default function Overview({ data }) {
             </span>
           </div>
         </div>
-        <VerticalBarWithLine data={disbursementData} height={320} />
+        <VerticalBarWithLineOverview data={disbursementData} height={320} />
       </div>
       {/* <ActivityChart timeseries={timeseries} /> */}
       <div className="section-label">Gen AI Insights</div>
