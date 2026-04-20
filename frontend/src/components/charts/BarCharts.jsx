@@ -13,8 +13,10 @@ import {
   ResponsiveContainer,
   Cell,
   LabelList,
+  Area,
 } from "recharts";
 import { buildUnifiedTooltip } from "./ChartTooltip";
+import { fmt } from "../../utils/formatters";
 
 /** Vertical bar chart */
 export function VerticalBar({
@@ -30,15 +32,22 @@ export function VerticalBar({
   return (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={data} margin={{ top: 25, right: 8, left: 0, bottom: 4 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+        <CartesianGrid
+          stroke="rgba(0,0,0,0.08)"
+          horizontal={true}
+          vertical={false}
+        />
         <XAxis
           dataKey={nameKey}
           interval={0}
           tickLine={false}
           axisLine={false}
-          height={60}
+          height={40} //reduced since no rotation
           tick={({ x, y, payload }) => {
-            const words = payload.value.split(" ");
+            let value = payload.value || "";
+
+            // Replace Years → Y
+            value = value.replace("Years", "Y");
 
             return (
               <text
@@ -48,13 +57,8 @@ export function VerticalBar({
                 fill="var(--text-muted)"
                 fontSize={10}
                 fontFamily="Inter"
-                transform={`rotate(-35, ${x}, ${y})`}
               >
-                {words.slice(0, 2).map((word, i) => (
-                  <tspan key={i} x={x} dy={i === 0 ? 0 : 12}>
-                    {word}
-                  </tspan>
-                ))}
+                {value}
               </text>
             );
           }}
@@ -67,7 +71,7 @@ export function VerticalBar({
           }}
           tickLine={false}
           axisLine={false}
-          tickFormatter={formatter}
+          tickFormatter={(v) => fmt.cr(v)}
         />
         <Tooltip
           cursor={{ fill: "transparent" }}
@@ -147,11 +151,7 @@ export function HorizontalBar({
             {/* dark */}
           </linearGradient>
         </defs>
-        <CartesianGrid
-          strokeDasharray="3 3"
-          stroke="var(--border)"
-          horizontal={false}
-        />
+        <CartesianGrid stroke="rgba(0,0,0,0.08)" horizontal={false} />
         <XAxis
           type="number"
           tick={{
@@ -216,7 +216,10 @@ export function GroupedBar({
 }) {
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <BarChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 4 }}>
+      <BarChart
+        data={data}
+        margin={{ top: 40, right: 12, left: 10, bottom: 4 }}
+      >
         <defs>
           {/* Blue gradient (Sanction) */}
           <linearGradient id="blueGrad" x1="0" y1="0" x2="0" y2="1">
@@ -230,7 +233,11 @@ export function GroupedBar({
             <stop offset="100%" stopColor="rgba(178,223,219,0.25)" />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+        <CartesianGrid
+          stroke="rgba(0,0,0,0.08)"
+          horizontal={true}
+          vertical={false}
+        />
         <XAxis
           dataKey={nameKey}
           interval={0}
@@ -266,6 +273,8 @@ export function GroupedBar({
           }}
           tickLine={false}
           axisLine={false}
+          tickFormatter={(v) => fmt.cr(v)}
+          padding={{ top: 1 }}
         />
         <Tooltip
           cursor={{ fill: "transparent" }} // ✅ ADD THIS
@@ -289,7 +298,57 @@ export function GroupedBar({
   );
 }
 
-export function VerticalBarWithLineOverview({ data, height = 320 }) {
+const formatDate = (value, viewMode) => {
+  if (!value) return "";
+
+  // 🟦 MONTHLY → Feb - 26
+  if (viewMode === "monthly") {
+    const date = new Date(value);
+
+    if (!isNaN(date)) {
+      const month = date.toLocaleString("en-IN", { month: "short" });
+      const year = String(date.getFullYear()).slice(-2);
+      return `${month} - ${year}`;
+    }
+
+    return value;
+  }
+
+  // 🟨 QUARTERLY → Q4 - 25
+  if (viewMode === "quarterly") {
+    const str = String(value);
+
+    // Handles "2025 Q4" OR "Q4"
+    const match = str.match(/(\d{4})?\s*(Q\d)/);
+
+    if (match) {
+      const year = match[1];
+      const quarter = match[2];
+
+      if (year) {
+        return `${quarter} - ${year.slice(-2)}`;
+      }
+
+      return quarter;
+    }
+
+    return str;
+  }
+
+  // 🟩 YEARLY → 2026 (ONLY YEAR)
+  if (viewMode === "yearly") {
+    const str = String(value);
+
+    // If value is like "2026 - 26" → extract only 2026
+    const match = str.match(/\d{4}/);
+
+    return match ? match[0] : str;
+  }
+
+  return value;
+};
+
+export function VerticalBarWithLineOverview({ data, height = 320, viewMode }) {
   return (
     <ResponsiveContainer width="100%" height={height}>
       <ComposedChart
@@ -308,51 +367,70 @@ export function VerticalBarWithLineOverview({ data, height = 320 }) {
             <stop offset="0%" stopColor="rgba(144,202,249,0.72)" />
             <stop offset="100%" stopColor="rgba(144,202,249,0.10)" />
           </linearGradient>
+
+          <linearGradient id="outstandingAreaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="rgba(0,172,193,0.35)" />
+            <stop offset="100%" stopColor="rgba(0,172,193,0.05)" />
+          </linearGradient>
         </defs>
 
-        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+        <CartesianGrid
+          stroke="rgba(0,0,0,0.08)"
+          horizontal={true}
+          vertical={false}
+        />
         <XAxis
           dataKey="name"
           axisLine={false}
           tickLine={false}
           tick={{ fontSize: 10, fill: "#6a9cbf", fontFamily: "Inter" }}
+          tickFormatter={(value) => formatDate(value, viewMode)}
         />
         <YAxis
           yAxisId="left"
+          tick={{ fontSize: 10, fill: "#00acc1" }}
+          axisLine={false}
+          tickLine={false}
+          tickFormatter={(v) => fmt.cr(v)}
+          label={{
+            value: "Sanction / Outstanding (₹ Cr)",
+            angle: -90,
+            dx: -9,
+            dy: 35,
+            position: "insideLeft",
+            style: { fontSize: 9, fill: "#00acc1" },
+          }}
+        />
+
+        {/* RIGHT → LOANS */}
+        <YAxis
+          yAxisId="right"
+          orientation="right"
           tick={{ fontSize: 10, fill: "#6a9cbf" }}
           axisLine={false}
           tickLine={false}
           label={{
-            value: "Loans / Rs Bn",
-            angle: -90,
-            position: "insideLeft",
-            style: { fontSize: 9, fill: "#6a9cbf" },
-          }}
-        />
-        <YAxis
-          yAxisId="right"
-          orientation="right"
-          tick={{ fontSize: 10, fill: "#00acc1" }}
-          axisLine={false}
-          tickLine={false}
-          label={{
-            value: "Outstanding (Rs Bn)",
+            value: "No. of Loans",
             angle: 90,
             position: "insideRight",
-            style: { fontSize: 9, fill: "#00acc1" },
+            style: { fontSize: 9, fill: "#6a9cbf" },
           }}
         />
 
         <Tooltip
           cursor={{ fill: "transparent" }}
           content={buildUnifiedTooltip({
-            valueFormatter: (value, _name, entry) =>
-              entry.dataKey === "loan" ? value : `Rs ${value} Bn`,
+            valueFormatter: (value, _name, entry) => {
+              if (entry.dataKey === "loan") {
+                return fmt.int(value); // loan count
+              }
+              return fmt.cr(value); // ₹ in Crores
+            },
           })}
         />
 
         <Bar
-          yAxisId="left"
+          yAxisId="right"
           dataKey="loan"
           name="No. of Loans"
           fill="url(#loanGrad)"
@@ -360,20 +438,29 @@ export function VerticalBarWithLineOverview({ data, height = 320 }) {
           maxBarSize={32}
         />
 
+        {/* ₹ → LEFT */}
         <Bar
           yAxisId="left"
           dataKey="sanction"
-          name="Sanction (Rs Bn)"
+          name="Sanction (₹ Cr)"
           fill="url(#sanctionGrad)"
           radius={[5, 5, 0, 0]}
           maxBarSize={32}
         />
 
-        <Line
-          yAxisId="right"
+        <Area
+          yAxisId="left"
           type="monotone"
           dataKey="outstanding"
-          name="Outstanding (Rs Bn)"
+          fill="url(#outstandingAreaGrad)"
+          stroke="none"
+        />
+
+        <Line
+          yAxisId="left"
+          type="monotone"
+          dataKey="outstanding"
+          name="Outstanding (₹ Cr)"
           stroke="#00acc1"
           strokeWidth={2.5}
           tension={0.38}
@@ -384,7 +471,6 @@ export function VerticalBarWithLineOverview({ data, height = 320 }) {
             fill: "#00acc1",
           }}
           activeDot={{ r: 5 }}
-          fill="rgba(0,172,193,0.07)"
           isAnimationActive={false}
         />
       </ComposedChart>
@@ -406,9 +492,23 @@ export function VerticalBarWithLineTransactions({ data, height = 320 }) {
             <stop offset="0%" stopColor="rgba(21,101,192,0.90)" />
             <stop offset="100%" stopColor="rgba(144,202,249,0.24)" />
           </linearGradient>
+
+          <linearGradient id="loanGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="rgba(21,101,192,0.90)" />
+            <stop offset="100%" stopColor="rgba(144,202,249,0.24)" />
+          </linearGradient>
+
+          <linearGradient id="sanctionAreaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="rgba(0,172,193,0.35)" />
+            <stop offset="100%" stopColor="rgba(0,172,193,0.05)" />
+          </linearGradient>
         </defs>
 
-        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+        <CartesianGrid
+          stroke="rgba(0,0,0,0.08)"
+          horizontal={true}
+          vertical={false}
+        />
         <XAxis
           dataKey="year"
           axisLine={false}
@@ -467,6 +567,14 @@ export function VerticalBarWithLineTransactions({ data, height = 320 }) {
           fill="url(#loanGrad)"
           radius={[5, 5, 0, 0]}
           maxBarSize={32}
+        />
+
+        <Area
+          yAxisId="right"
+          type="monotone"
+          dataKey="sanction"
+          fill="url(#sanctionAreaGrad)"
+          stroke="none"
         />
 
         <Line
