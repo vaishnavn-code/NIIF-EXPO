@@ -9,7 +9,6 @@ import {
 } from "../components/charts/BarCharts";
 import { Spinner, ErrorMsg } from "../components/ui/helpers";
 import { useInsights } from "../hooks/useDashboardData";
-import { fmt } from "../utils/formatters";
 import DonutLegend from "../components/charts/DonutLegend";
 import React from "react";
 
@@ -137,20 +136,6 @@ export default function Overview({ data }) {
       .slice(0, 10); // ✅ top 10
   }, [data]);
 
-  const availableYears = useMemo(() => {
-    const chart = data?.overview?.charts?.["Disbursements Activity"];
-
-    if (!chart?.values) return [];
-
-    return [
-      ...new Set(
-        Object.values(chart.values)
-          .map((val) => String(val?.Year || ""))
-          .filter(Boolean),
-      ),
-    ].sort((a, b) => Number(b) - Number(a));
-  }, [data]);
-
   const disbursementData = useMemo(() => {
     const chart = data?.overview?.charts?.["Disbursements Activity"];
 
@@ -222,6 +207,29 @@ export default function Overview({ data }) {
 
     return [];
   }, [data, selectedYear, viewMode]);
+
+  const formatDisplay = (v) => {
+    if (!v) return "-";
+
+    const str = String(v);
+
+    // Extract number
+    const num = parseFloat(str.replace(/₹|,|Cr|%/gi, ""));
+
+    if (isNaN(num)) return v; // return original if not numeric
+
+    // Handle %
+    if (str.includes("%")) {
+      return `${num.toFixed(2)} %`;
+    }
+
+    // Handle Cr
+    if (str.toLowerCase().includes("cr")) {
+      return `₹${num.toLocaleString("en-IN")} Cr`;
+    }
+
+    return v;
+  };
 
   const disbursementTitle =
     viewMode.charAt(0).toUpperCase() +
@@ -314,7 +322,7 @@ export default function Overview({ data }) {
 
         <KpiCard
           label="Total Sanction"
-          value={kpi.Total_Sanction?.Title}
+          value={formatDisplay(kpi.Total_Sanction?.Title)}
           sub={kpi.Total_Sanction?.Subtitle}
           footer={kpi.Total_Sanction?.Footer}
           sparkPct={100}
@@ -324,6 +332,7 @@ export default function Overview({ data }) {
             label: "Sanctioned",
             bgColor: "#E8F1FF",
             textColor: "#1D4ED8",
+            dotColor: "#1D4ED8", // 👈 key line for badge dot
           }}
         />
 
@@ -342,7 +351,7 @@ export default function Overview({ data }) {
 
         <KpiCard
           label="Total Outstanding Amount"
-          value={kpi.Outstanding_Amount?.Title}
+          value={formatDisplay(kpi.Outstanding_Amount?.Title)}
           sub={kpi.Outstanding_Amount?.Subtitle}
           footer={kpi.Outstanding_Amount?.Footer}
           sparkPct={60}
@@ -350,23 +359,24 @@ export default function Overview({ data }) {
           iconName="graph"
           badge={{
             label: "Outstanding",
-            bgColor: "#F3E5F5",
+            bgColor: "#E8F5E9",
             textColor: "#43A047",
+            dotColor: "#43A047", //  key line for badge dot
           }}
         />
 
         <KpiCard
           label="Total Exposure Amount"
-          value={kpi.Total_Exposure?.Title}
+          value={formatDisplay(kpi.Total_Exposure?.Title)}
           sub={kpi.Total_Exposure?.Subtitle}
           footer={kpi.Total_Exposure?.Footer}
           sparkPct={80}
           accent="c3"
           iconName="trending"
           badge={{
-            label: "Outstanding",
-            bgColor: "#E8F5E9",
-            textColor: "#43A047",
+            label: "Exposure",
+            bgColor: "#FFF3E0",
+            textColor: "#FB8C00",
           }}
         />
 
@@ -385,7 +395,7 @@ export default function Overview({ data }) {
 
         <KpiCard
           label="Avg. Interest Rate"
-          value={kpi.Avg_IntRate?.Title}
+          value={formatDisplay(kpi.Avg_IntRate?.Title)}
           sub={kpi.Avg_IntRate?.Subtitle}
           footer={kpi.Avg_IntRate?.Footer}
           sparkPct={40}
@@ -408,8 +418,6 @@ export default function Overview({ data }) {
           }
           accent="c4"
         /> */}
-
-
       </div>
       <div className="section-label">Disbursement Activity Trend</div>
       <div className="chart-card">

@@ -349,6 +349,37 @@ export default function Transactions({ data }) {
 
   const currentFYSub = kpis?.Current_FY_Disb?.subtitle || "";
 
+  const formatDisplay = (v) => {
+    if (v === null || v === undefined || v === "") return "-";
+
+    const str = String(v);
+
+    // Extract numeric part
+    const num = parseFloat(str.replace(/₹|,|Cr|%|Bn|Mn/gi, ""));
+
+    if (isNaN(num)) return v;
+
+    // % case
+    if (str.includes("%")) {
+      return `${num.toFixed(2)} %`;
+    }
+
+    // Already in Cr
+    if (str.toLowerCase().includes("cr")) {
+      return `₹${num.toLocaleString("en-IN")} Cr`;
+    }
+
+    // Already in Bn
+    if (str.toLowerCase().includes("bn")) {
+      return `₹${(num * 100).toLocaleString("en-IN")} Cr`;
+    }
+
+    // RAW INR → convert to Cr
+    return `₹${(num / 1e7).toLocaleString("en-IN", {
+      maximumFractionDigits: 2,
+    })} Cr`;
+  };
+
   return (
     <div>
       <div className="section-label">Transaction Analytics</div>
@@ -371,7 +402,7 @@ export default function Transactions({ data }) {
 
         <KpiCard
           label="Avg Sanction"
-          value={`${fmt.mn(avgSanction)}`}
+          value={formatDisplay(avgSanction)}
           sub={avgSanctionSub}
           footer={kpis?.Average_Sanction?.footer}
           iconName="dollar"
@@ -386,7 +417,7 @@ export default function Transactions({ data }) {
 
         <KpiCard
           label="Principal Received"
-          value={`${fmt.bn(principalRecv)}`}
+          value={formatDisplay(principalRecv)}
           sub={principalSub}
           footer={kpis?.Principal_Recieved?.footer}
           iconName="storage"
@@ -441,7 +472,12 @@ export default function Transactions({ data }) {
         <div className="chart-card">
           <div className="chart-title">Quarterly Sanction Volume</div>
           <div className="chart-subtitle">SANCTION ₹ BN — ALL QUARTERS</div>
-          <VerticalBar data={quarterlyData} dataKey="value" nameKey="quarter" formatter={(v) => `₹${Number(v).toLocaleString("en-IN")} Cr`} />
+          <VerticalBar
+            data={quarterlyData}
+            dataKey="value"
+            nameKey="quarter"
+            formatter={(v) => `₹${Number(v).toLocaleString("en-IN")} Cr`}
+          />
         </div>
 
         <div className="chart-card">

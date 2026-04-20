@@ -79,6 +79,7 @@ export function VerticalBar({
           tickFormatter={(v) => (formatter ? formatter(v) : fmt.cr(v))}
         />
         <Tooltip
+        cursor={{ fill: "transparent" }}
           content={buildUnifiedTooltip({
             valueFormatter: (value) =>
               `₹${Number(value).toLocaleString("en-IN")} Cr`,
@@ -141,7 +142,6 @@ export function HorizontalBar({
   data,
   dataKey,
   nameKey = "name",
-  color = "var(--blue)",
   height,
   unit = "",
   formatter,
@@ -201,7 +201,7 @@ export function HorizontalBar({
           radius={[0, 4, 4, 0]}
           maxBarSize={18}
         >
-          <LabelList
+          {/* <LabelList
             dataKey={dataKey}
             position="right"
             style={{
@@ -210,7 +210,7 @@ export function HorizontalBar({
               fontFamily: "Inter",
             }}
             formatter={(v) => (formatter ? formatter(v) : `${v}${unit}`)}
-          />
+          /> */}
         </Bar>
       </BarChart>
     </ResponsiveContainer>

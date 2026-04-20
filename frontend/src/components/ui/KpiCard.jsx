@@ -1,5 +1,5 @@
-import React from "react"
-import { ICONS } from "../../data/Icons"
+import React from "react";
+import { ICONS } from "../../data/Icons";
 
 export default function KpiCard({
   label,
@@ -10,30 +10,28 @@ export default function KpiCard({
   accent = "c1",
 
   // Icon
-  icon,        // JSX (optional)
-  iconName,    // string key from ICONS
+  icon, // JSX (optional)
+  iconName, // string key from ICONS
 
   // Badge
-  badge,       // { label, variant, bgColor, textColor }
+  badge, // { label, variant, bgColor, textColor }
 }) {
-
   // Resolve icon (priority: direct JSX > iconName)
-  const IconComponent =
-    icon || (iconName && ICONS[iconName])
+  const IconComponent = icon || (iconName && ICONS[iconName]);
 
   return (
     <div className={`kpi-card ${accent}`}>
       <div className="kpi-body">
-
         {/* Top section: Icon (left) + Badge (right) */}
         {(IconComponent || badge) && (
           <div className="kpi-top">
-
             {IconComponent && (
               <div className="kpi-icon-wrap">
-                {typeof IconComponent === "function"
-                  ? <IconComponent />
-                  : IconComponent}
+                {typeof IconComponent === "function" ? (
+                  <IconComponent />
+                ) : (
+                  IconComponent
+                )}
               </div>
             )}
 
@@ -43,6 +41,7 @@ export default function KpiCard({
                 style={{
                   backgroundColor: badge.bgColor,
                   color: badge.textColor,
+                  "--dot-color": badge.dotColor || badge.textColor, // 👈 key line
                 }}
               >
                 {badge.label}
@@ -78,14 +77,11 @@ export default function KpiCard({
             <div className="kpi-divider" />
             <div className="kpi-footer">
               <div className="kpi-footer-dot" />
-              <span
-                dangerouslySetInnerHTML={{ __html: footer }}
-              />
+              <span dangerouslySetInnerHTML={{ __html: footer }} />
             </div>
           </>
         )}
-
       </div>
     </div>
-  )
+  );
 }

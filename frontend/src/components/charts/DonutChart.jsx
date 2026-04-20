@@ -32,6 +32,7 @@ export default function DonutChart({
           ))}
         </Pie>
         <Tooltip
+        cursor={{ fill: "transparent" }}
           content={buildUnifiedTooltip({
             valueFormatter: (value) => (formatter ? formatter(value) : value),
           })}
