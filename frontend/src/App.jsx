@@ -68,7 +68,8 @@ export default function App() {
 
       <div className="main-area">
         <Header
-          title={PAGE_TITLES[page]}
+        title="NIIF"
+          subtitle={PAGE_TITLES[page]}
           darkMode={darkMode}
           onToggleDark={toggleDark}
         />

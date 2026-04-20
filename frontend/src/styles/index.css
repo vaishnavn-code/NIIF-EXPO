@@ -413,7 +413,12 @@ body {
   top: 0;
   z-index: 10;
 }
-.header-title { font-size: .9rem; font-weight: 800; color: var(--text) }
+.header-title{
+  display: flex;
+}
+.header-title { font-size: 1.25rem; font-weight: 800; color: var(--text) }
+.header-subtitle { font-size: .8rem; font-weight: 600; color: var(--text) }
+
 .header-actions { display:flex; align-items:center; gap:10px }
 .icon-btn {
   width: 34px; height: 34px;
