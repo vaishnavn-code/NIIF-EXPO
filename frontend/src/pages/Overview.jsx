@@ -740,13 +740,13 @@ export default function Overview({ data }) {
           <div className="chart-subtitle">PRINCIPAL & INTEREST RECEIVED</div>
           <DonutChart
             data={collectionDonut}
-            colors={["#2e7d32", "#43a047", "#e53935"]}
+            colors={["#1565c0", "#00acc1", "#90caf9"]}
             height={220}
             formatter={(v) => `₹${v} Cr`}
           />
           <DonutLegend
             data={collectionDonut}
-            colors={["#2e7d32", "#43a047", "#e53935"]}
+            colors={["#1565c0", "#00acc1", "#90caf9"]}
             showPercent={true}
           />
         </div>

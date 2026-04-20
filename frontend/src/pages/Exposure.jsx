@@ -122,7 +122,7 @@ export default function Exposure({ data }) {
     rateBar: 15,
   });
   const [search, setSearch] = useState("");
-
+  const PAGE_SIZE = 25;
   const fetcher = useCallback((p) => dashboardApi.getGroups(p), []);
   const { rows, total, totalPages, loading, params, updateParams } =
     usePaginatedData(fetcher, {
@@ -161,43 +161,43 @@ export default function Exposure({ data }) {
 
         // CORRECT KEYS
         Sanction: Number(g.sanction_amt || 0),
-"Loan Amt": Number(g.loan_amt || 0),
-Outstanding: Number(g.outstanding_amt || 0),
+        "Loan Amt": Number(g.loan_amt || 0),
+        Outstanding: Number(g.outstanding_amt || 0),
       }))
       .sort((a, b) => b.Outstanding - a.Outstanding) // 🔥 important
       .slice(0, topN.triple);
   }, [exposureTable, topN.triple]);
 
   const intBarData = useMemo(() => {
-  if (!exposureTable.length) return [];
+    if (!exposureTable.length) return [];
 
-  return exposureTable
-    .map((g) => ({
-      name: g.bp_group,
-      value: Number(g.int_recv || 0), // ₹ Mn
-    }))
-    .sort((a, b) => b.value - a.value) // 🔥 descending
-    .slice(0, topN.intBar);
-}, [exposureTable, topN.intBar]);
+    return exposureTable
+      .map((g) => ({
+        name: g.bp_group,
+        value: Number(g.int_recv || 0), // ₹ Mn
+      }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, topN.intBar);
+  }, [exposureTable, topN.intBar]);
 
   const rateBarData = useMemo(() => {
-  if (!exposureTable.length) return [];
+    if (!exposureTable.length) return [];
 
-  return exposureTable
-    .map((g) => ({
-      name: g.bp_group,
+    return exposureTable
+      .map((g) => ({
+        name: g.bp_group,
 
-      // 🎯 MOCK RANDOM RATE (6% - 14%)
-      value: Number((6 + Math.random() * 8).toFixed(2)),
-    }))
-    .sort((a, b) => b.value - a.value) // 🔥 descending
-    .slice(0, topN.rateBar);
-}, [exposureTable, topN.rateBar]);
+        // 🎯 MOCK RANDOM RATE (6% - 14%)
+        value: Number((6 + Math.random() * 8).toFixed(2)),
+      }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, topN.rateBar);
+  }, [exposureTable, topN.rateBar]);
 
-  const handleSearch = (e) => {
-    setSearch(e.target.value);
-    updateParams({ search: e.target.value, page: 1 });
-  };
+const handleSearch = (e) => {
+  setSearch(e.target.value);
+  updateParams({ page: 1 }); 
+};
   const handleSort = (key) => {
     const dir =
       params.sort_by === key && params.sort_dir === "desc" ? "asc" : "desc";
@@ -210,8 +210,20 @@ Outstanding: Number(g.outstanding_amt || 0),
     "TL_Disbursements",
     "DEB_Disbursements",
   ];
+const filteredRows = useMemo(() => {
+  const source = allGroups?.length ? allGroups : exposureTable;
 
-  return (
+  if (!search) return source;
+
+  return source.filter((row) =>
+    row.bp_group?.toLowerCase().includes(search.toLowerCase())
+  );
+}, [search, allGroups, exposureTable]);
+const paginatedRows = useMemo(() => {
+  const start = (params.page - 1) * PAGE_SIZE;
+  return filteredRows.slice(start, start + PAGE_SIZE);
+}, [filteredRows, params.page]);
+const totalPagesLocal = Math.ceil(filteredRows.length / PAGE_SIZE);  return (
     <div>
       <div className="section-label">Exposure Analytics — Group Breakdown</div>
 
@@ -296,7 +308,7 @@ Outstanding: Number(g.outstanding_amt || 0),
             nameKey="name"
             color="url(#intGrad)"
             height={260}
-            barSize={12}
+            barSize={30}
             formatter={(v) => `₹${v}Mn`}
           />
         </div>
@@ -314,7 +326,7 @@ Outstanding: Number(g.outstanding_amt || 0),
             nameKey="name"
             color="url(#rateGrad)"
             height={260}
-            barSize={12}
+            barSize={30}
             unit="%"
             formatter={(v) => `${v}%`}
           />
@@ -353,10 +365,10 @@ Outstanding: Number(g.outstanding_amt || 0),
         </div>
         <DataTable
           columns={COLUMNS}
-          rows={exposureTable}
-          total={exposureTable.length}
+          rows={paginatedRows}
+          total={filteredRows.length}
           page={params.page}
-          totalPages={totalPages}
+          totalPages={totalPagesLocal}
           onPage={(p) => updateParams({ page: p })}
           sortBy={params.sort_by}
           sortDir={params.sort_dir}

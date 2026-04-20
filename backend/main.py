@@ -529,6 +529,8 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
     total_interest_rate = 0.0
     min_interest_rate = float("inf")
     max_interest_rate = float("-inf")
+    min_sanc_amt = float("inf")
+    max_sanc_amt = float("-inf")
     total_int_due = 0.0
     tl_os_amt = 0.0
     deb_os_amt = 0.0
@@ -576,6 +578,9 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
         if interest_rate > 0:  
             min_interest_rate = min(min_interest_rate, interest_rate)
             max_interest_rate = max(max_interest_rate, interest_rate)
+        if sanction_amt > 0:  
+            min_sanc_amt = min(min_sanc_amt, sanction_amt)
+            max_sanc_amt = max(max_sanc_amt, sanction_amt)    
         total_interest_rate += interest_rate
         # Customer and disbursement tracking
         customer = str(row.get("Customer Name") or "")
@@ -781,7 +786,6 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
             "int_recv": int_rec,
             "avg_rate": interest_rate
         })
-    
     # Average Interest Rate
     avg_interest_rate = (total_interest_rate / len(rows)) if rows else 0
     # Build exposure table
@@ -876,7 +880,7 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
                     "values": tenor_buckets_disb_counts
                 },
                 "Rate Distribution": {
-                    "values": rate_buckets
+                    "values": rate_buckets_disb_counts
                 },
                 "Collections Overview": {
                     "values": {
@@ -946,25 +950,24 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
         "kpi": {
       "Total_Transactions": {
         "title": str(len(disb_set)),
-        "sub title": {
-            "TL_Disbursements": str(tl_count),
-            "DEB_Disbursements": str(deb_count),
+        "subtitle": {
+            f"{str(tl_count)} Term Loans · {str(deb_count)} Debentures"
         },
-        "footer": ""
+        "footer": f"{len(proposal_set)} Unique Proposals"
       },
       "Average_Sanction": {
         "title": str(round(total_sanction / len(disb_set), 2)) if disb_set else "0",
-        "sub title": "",
+        "subtitle": f"Max: ₹{round(max_sanc_amt / 1e9, 2)} Bn · Min: ₹{round(min_sanc_amt / 1e6, 2)} Mn",
         "footer": ""
       },
       "Principal_Recieved": {
         "title": str(round(total_prin_rec, 2)),
-        "sub title": "",
-        "footer": ""
+        "subtitle": f"{((total_prin_rec / total_sanction) * 100):.2f}% of total sanctioned" if total_sanction else "0.00% of total sanctioned",
+        "footer": f"Interest Received: ₹{total_int_rec / 1e9:.2f} Bn"
       },
       "Current_FY_Disb": {
         "title": str(len(fy_2026_disb_set)),
-        "sub title": "",
+        "subtitle": "",
         "footer": ""
       }
     },

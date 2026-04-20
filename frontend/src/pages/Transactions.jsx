@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo  } from "react";
 import {
   VerticalBar,
   VerticalBarWithLineTransactions,
@@ -11,6 +11,11 @@ import { fmt } from "../utils/formatters";
 import { TOP_N_OPTIONS } from "../utils/constants";
 
 export default function Transactions({ data }) {
+
+  const [search, setSearch] = useState("");
+const [product, setProduct] = useState("");
+const [rate, setRate] = useState("");
+const [tenor, setTenor] = useState("");
 
   const txn = data?.transactions || {};
   const customer = data?.overview?.kpi || {};
@@ -296,11 +301,49 @@ export default function Transactions({ data }) {
       },
     }
   ];
-  const paginatedRows = txnTable.slice(
-    (page - 1) * PAGE_SIZE,
-    page * PAGE_SIZE
-  );
-  const totalPages = Math.ceil(txnTable.length / PAGE_SIZE);
+
+    const filteredRows = useMemo(() => {
+  return txnTable.filter((row) => {
+    const matchSearch =
+      !search ||
+      row.proposal_id?.toString().includes(search) ||
+      row.customer?.toLowerCase().includes(search.toLowerCase()) ||
+      row.group?.toLowerCase().includes(search.toLowerCase());
+    const matchProduct =
+      !product || row.product?.toUpperCase().includes(product);
+
+    const r = Number(row.rate || 0);
+    const matchRate =
+      !rate ||
+      (rate === "low" && r < 8) ||
+      (rate === "mid" && r >= 8 && r <= 9) ||
+      (rate === "high" && r > 9);
+
+    let matchTenor = true;
+    if (tenor) {
+      const start = new Date(row.start_date);
+      const end = new Date(row.end_date);
+      const years = (end - start) / (1000 * 60 * 60 * 24 * 365);
+
+      matchTenor =
+        (tenor === "short" && years < 10) ||
+        (tenor === "medium" && years >= 10 && years <= 15) ||
+        (tenor === "long" && years > 15);
+    }
+
+    return matchSearch && matchProduct && matchRate && matchTenor;
+  });
+}, [txnTable, search, product, rate, tenor]);
+
+const paginatedRows = filteredRows.slice(
+  (page - 1) * PAGE_SIZE,
+  page * PAGE_SIZE
+);
+
+const totalPages = Math.ceil(filteredRows.length / PAGE_SIZE);
+
+
+
   return (
     <div>
       <div className="section-label">Transaction Analytics</div>
@@ -498,18 +541,88 @@ export default function Transactions({ data }) {
         <div class="cio-note">
           Searchable register of all {totalTxn} disbursement transactions across {totalCust}. Filter by product, rate band, or tenor.
         </div>
-        <DataTable
-          columns={TXN_COLUMNS}
-          rows={paginatedRows}
-          total={txnTable.length}
-          page={page}
-          totalPages={totalPages}
-          onPage={setPage}
-          sortBy={null}
-          sortDir={null}
-          onSort={() => { }}
-          loading={false}
-        />
+<div className="txn-toolbar">
+  <input
+    className="txn-search"
+    placeholder="Search Proposal, Customer, Group..."
+    value={search}
+    onChange={(e) => {
+      setSearch(e.target.value);
+      setPage(1); // reset page
+    }}
+  />
+
+  <select
+    className="txn-select"
+    value={product}
+    onChange={(e) => {
+      setProduct(e.target.value);
+      setPage(1);
+    }}
+  >
+    <option value="">All Products</option>
+    <option value="TL">TL</option>
+    <option value="DEB">DEB</option>
+  </select>
+
+  <select
+    className="txn-select"
+    value={rate}
+    onChange={(e) => {
+      setRate(e.target.value);
+      setPage(1);
+    }}
+  >
+    <option value="">All Rates</option>
+    <option value="low">Rate &lt; 8%</option>
+    <option value="mid">Rate 8–9%</option>
+    <option value="high">Rate &gt; 9%</option>
+  </select>
+
+  <select
+    className="txn-select"
+    value={tenor}
+    onChange={(e) => {
+      setTenor(e.target.value);
+      setPage(1);
+    }}
+  >
+    <option value="">All Tenors</option>
+    <option value="short">&lt; 10 yrs</option>
+    <option value="medium">10–15 yrs</option>
+    <option value="long">&gt; 15 yrs</option>
+  </select>
+
+  <button
+    className="txn-clear"
+    onClick={() => {
+      setSearch("");
+      setProduct("");
+      setRate("");
+      setTenor("");
+      setPage(1);
+    }}
+  >
+    Clear
+  </button>
+
+  <span className="txn-count">
+    {filteredRows.length} records
+  </span>
+</div>
+
+<DataTable
+  columns={TXN_COLUMNS}
+  rows={paginatedRows}
+  total={filteredRows.length}
+  page={page}
+  totalPages={totalPages}
+  onPage={setPage}
+  sortBy={null}
+  sortDir={null}
+  onSort={() => {}}
+  loading={false}
+/>
       </div>
     </div>
   );

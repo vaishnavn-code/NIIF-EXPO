@@ -3,11 +3,14 @@ import { fmt } from "../utils/formatters";
 import React, { useState, useMemo } from "react";
 
 const COLUMNS = [
-  // 🖤 Proposal ID (bold black)
   {
     key: "proposal_id",
     label: "Proposal ID",
-    render: (v) => <span style={{ fontWeight: 700, color: "#111" }}>{v}</span>,
+    render: (v) => (
+      <span style={{ fontWeight: 700, color: "#111" }}>
+        {Number(v)}
+      </span>
+    ),
   },
 
   { key: "customer", label: "Customer" },
@@ -149,17 +152,42 @@ const COLUMNS = [
 ];
 
 export default function Loans({ data }) {
-  const rows = data?.loan_portfolio?.table || [];
 
+  const rows = data?.loan_portfolio?.table || [];
+  const kpi = data?.exposure?.kpi || {}
   const [page, setPage] = useState(1);
   const PER_PAGE = 25;
 
+
+
+  const [search, setSearch] = useState("");
+  const [productFilter, setProductFilter] = useState("");
+
+  const totalrecords = kpi?.Total_Records?.Title;
+  const tlrecords = kpi?.TL_Disbursements?.Title;
+  const debrecords = kpi?.DEB_Disbursements?.Title;
+
+  const filteredRows = useMemo(() => {
+    return rows.filter((row) => {
+      const matchesSearch =
+        !search ||
+        row.proposal_id?.toString().includes(search) ||
+        row.customer?.toLowerCase().includes(search.toLowerCase()) ||
+        row.group?.toLowerCase().includes(search.toLowerCase());
+
+      const matchesProduct =
+        !productFilter || row.product === productFilter;
+
+      return matchesSearch && matchesProduct;
+    });
+  }, [rows, search, productFilter]);
+
   const paginatedRows = useMemo(() => {
     const start = (page - 1) * PER_PAGE;
-    return rows.slice(start, start + PER_PAGE);
-  }, [rows, page]);
+    return filteredRows.slice(start, start + PER_PAGE);
+  }, [filteredRows, page]);
 
-  const totalPages = Math.ceil(rows.length / PER_PAGE);
+  const totalPages = Math.ceil(filteredRows.length / PER_PAGE);
 
   return (
     <div>
@@ -171,20 +199,58 @@ export default function Loans({ data }) {
           <span className="card-badge">{rows.length} RECORDS</span>
         </div>
 
-        <div className="cio-note">
-          Portfolio includes <strong>{rows.length} loan records</strong>.
+        <div class="cio-note">All {totalrecords} disbursement records — {tlrecords} Term Loans and {debrecords} Debentures. Start dates: Feb 2016 - Mar 2026. Maturity: up to Jun 2051. All Standard Assets in INR.
+        </div>
+        <div className="txn-toolbar">
+          <input
+            className="txn-search"
+            placeholder="Search Proposal, Customer, Group..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1); // reset page
+            }}
+          />
+
+          <select
+            className="txn-select"
+            value={productFilter}
+            onChange={(e) => {
+              setProductFilter(e.target.value);
+              setPage(1); // reset page
+            }}
+          >
+            <option value="">All Products</option>
+            <option value="TL - Disbursements">TL - Disbursements</option>
+            <option value="DEB - Disbursements">DEB - Disbursements</option>
+          </select>
+
+          <button
+            className="txn-clear"
+            onClick={() => {
+              setSearch("");
+              setProductFilter("");
+              setPage(1);
+            }}
+          >
+            Clear
+          </button>
+
+          <span className="txn-count">
+            {rows.length} records
+          </span>
         </div>
 
         <DataTable
           columns={COLUMNS}
           rows={paginatedRows}
-          total={rows.length}
+          total={filteredRows.length}
           page={page}
           totalPages={totalPages}
           onPage={(p) => setPage(p)}
           sortBy={null}
           sortDir={null}
-          onSort={() => {}}
+          onSort={() => { }}
           loading={false}
         />
       </div>

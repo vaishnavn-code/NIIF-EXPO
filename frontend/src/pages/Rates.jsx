@@ -6,7 +6,7 @@ import { usePaginatedData } from "../hooks/useDashboardData";
 import { dashboardApi } from "../api/client";
 import { fmt } from "../utils/formatters";
 import { TOP_N_OPTIONS } from "../utils/constants";
-import mockRates from "../data/mockRates.json";
+// import mockRates from "../data/mockRates.json";
 import React from "react";
 
 export default function Rates({ data }) {
