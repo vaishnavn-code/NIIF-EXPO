@@ -295,12 +295,27 @@ export default function Overview({ data }) {
         /> */}
 
         <KpiCard
-          label="Total Exposure"
+          label="Total Outstanding Amount"
+          value={kpi.Outstanding_Amount?.Title}
+          sub={kpi.Outstanding_Amount?.Subtitle}
+          footer={kpi.Outstanding_Amount?.Footer}
+          sparkPct={60}
+          accent="c2"
+          iconName="graph"
+          badge={{
+            label: "Outstanding",
+            bgColor: "#F3E5F5",
+            textColor: "#43A047",
+          }}
+        />
+
+        <KpiCard
+          label="Total Exposure Amount"
           value={kpi.Total_Exposure?.Title}
           sub={kpi.Total_Exposure?.Subtitle}
           footer={kpi.Total_Exposure?.Footer}
           sparkPct={80}
-          accent="c2"
+          accent="c3"
           iconName="trending"
           badge={{
             label: "Outstanding",
@@ -323,17 +338,17 @@ export default function Overview({ data }) {
         /> */}
 
         <KpiCard
-          label="Principal Received"
-          value={kpi.Principal_Recieved?.Title}
-          sub={kpi.Principal_Recieved?.Subtitle}
-          footer={kpi.Principal_Recieved?.Footer}
+          label="Avg. Interest Rate"
+          value={kpi.Avg_IntRate?.Title}
+          sub={kpi.Avg_IntRate?.Subtitle}
+          footer={kpi.Avg_IntRate?.Footer}
           sparkPct={40}
-          accent="c3"
+          accent="c4"
           iconName="personFolder"
           badge={{
-            label: "Exposure",
+            label: "Rate",
             bgColor: "#FFF3E0",
-            textColor: "#FB8C00",
+            textColor: "#7B1FA2",
           }}
         />
 
@@ -348,20 +363,7 @@ export default function Overview({ data }) {
           accent="c4"
         /> */}
 
-        <KpiCard
-          label="Outstanding Amount"
-          value={kpi.Outstanding_Amount?.Title}
-          sub={kpi.Outstanding_Amount?.Subtitle}
-          footer={kpi.Outstanding_Amount?.Footer}
-          sparkPct={60}
-          accent="c4"
-          iconName="graph"
-          badge={{
-            label: "Rate",
-            bgColor: "#F3E5F5",
-            textColor: "#7B1FA2",
-          }}
-        />
+
       </div>
       <div className="section-label">Disbursement Activity Trend</div>
       <div className="chart-card">

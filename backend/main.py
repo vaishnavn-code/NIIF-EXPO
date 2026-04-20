@@ -526,6 +526,9 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
     total_exposure = 0.0
     total_int_rec = 0.0
     total_upcoming_int = 0.0
+    total_interest_rate = 0.0
+    min_interest_rate = float("inf")
+    max_interest_rate = float("-inf")
     total_int_due = 0.0
     tl_os_amt = 0.0
     deb_os_amt = 0.0
@@ -534,6 +537,7 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
     fy_2026_disb_set = set()
     bp_summary_map = {}
     product_counts = {}
+    proposal_set = set()
     tenor_buckets = {"0-5 Years": set(),"5-10 Years": set(),"10-15 Years": set(),"15-20 Years": set(),"20-25 Years": set(),"25-30 Years": set(),">30 Years": set()}    
     rate_buckets = {"<7 %": 0, "7-9 %": 0, "9-12 %": 0, ">12 %": 0}
     rate_buckets_disb = {"<7%": set(), "7-8%": set(), "8-8.5%": set(), "8.5-9%": set(), "9-9.5%": set(), "9.5-10%": set(),">10%": set()}
@@ -569,12 +573,23 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
         total_int_rec += int_rec
         total_upcoming_int += upcoming_int
         total_int_due += interest_due
+        if interest_rate > 0:  
+            min_interest_rate = min(min_interest_rate, interest_rate)
+            max_interest_rate = max(max_interest_rate, interest_rate)
+        total_interest_rate += interest_rate
         # Customer and disbursement tracking
         customer = str(row.get("Customer Name") or "")
         customer_set.add(customer)
         disb_no = str(row.get("Dis No") or "")
+        proposal_no = str(row.get("Proposal No") or "")
+        
+        # Disb No Count
         if disb_no:
             disb_set.add(disb_no)
+
+        # Proposal No count
+        if proposal_no:
+            proposal_set.add(proposal_no)
 
         # BP Group summary
         bp_group = str(row.get("BP Grp Name") or "Others")
@@ -766,6 +781,9 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
             "int_recv": int_rec,
             "avg_rate": interest_rate
         })
+    
+    # Average Interest Rate
+    avg_interest_rate = (total_interest_rate / len(rows)) if rows else 0
     # Build exposure table
     for bp_group, data in bp_summary_map.items():
         exposure_table.append({
@@ -828,23 +846,23 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
             "kpi": {
                 "Total_Sanction": {
                     "Title": f"₹{round(total_sanction / 10000000, 2)} Cr",
-                    "Subtitle": "Total Sanctioned Amount",
-                    "Footer": f"Outstanding: ₹{round(total_os_amt / 10000000, 2)} Cr"
-                },
-                "Total_Exposure": {
-                    "Title": f"₹{round(total_exposure / 10000000, 2)} Cr",
-                    "Subtitle": "Total Exposure Amount",
-                    "Footer": f"Utilization: {round((total_os_amt / total_sanction * 100) if total_sanction > 0 else 0, 1)}%"
-                },
-                "Principal_Recieved": {
-                    "Title": f"₹{round(total_prin_rec / 10000000, 2)} Cr",
-                    "Subtitle": "Principal Received",
-                    "Footer": f"Recovery Rate: {round((total_prin_rec / total_sanction * 100) if total_sanction > 0 else 0, 1)}%"
+                    "Subtitle": f"{str(len(rows))} loan records · {len(proposal_set)} proposals",
+                    "Footer": f"{str(len(bp_summary_map))} Borrower Groups · {len(customer_set)} Customers"
                 },
                 "Outstanding_Amount": {
                     "Title": f"₹{round(total_os_amt / 10000000, 2)} Cr",
-                    "Subtitle": "Outstanding Amount",
-                    "Footer": f"Active Loans: {len(disb_set)}"
+                    "Subtitle": f"Disbursed: ₹{round(total_exposure / 10000000, 2)} Cr  total",
+                    "Footer": f"Principal Received: ₹{round(total_prin_rec / 10000000, 2)} Cr"
+                },
+                "Total_Exposure": {
+                    "Title": f"₹{round(total_exposure / 10000000, 2)} Cr",
+                    "Subtitle": f"Interest Due: ₹{round(total_int_due/10000000,2)} Cr accrued",
+                    "Footer": f"Upcoming Interest: ₹{round(total_upcoming_int/10000000,2)} Cr"
+                },
+               "Avg_IntRate": {
+                    "Title": f"{avg_interest_rate:.2f} %",
+                    "Subtitle": f"Range: {min_interest_rate:.2f}% - {max_interest_rate:.2f}% pa",
+                    "Footer": ""
                 }
             },
             "charts": {
@@ -876,19 +894,23 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
             "kpi": {
                 "Total_Records": {
                     "Title": str(len(rows)),
-                    "Subtitle": "Total Records"
+                    "Subtitle": "Total Records",
+                    "Footer": "Disbursement Entries"
                 },
                 "Borrower_Groups": {
                     "Title": str(len(bp_summary_map)),
-                    "Subtitle": "Borrower Groups"
+                    "Subtitle": "Borrower Groups",
+                    "Footer": "Active Group Entities"
                 },
                 "TL_Disbursements": {
                     "Title": str(tl_count),
-                    "Subtitle": str(round(tl_os_amt / 10000000, 2))
+                    "Subtitle": "TL Disbursements",
+                    "Footer": f"Term Loans · ₹{str(round(tl_os_amt / 10000000, 2))} Cr O/S"
                 },
                 "DEB_Disbursements": {
                     "Title": str(deb_count),
-                    "Subtitle": str(round(deb_os_amt / 10000000, 2)) 
+                    "Subtitle": "DEB Disbursements",
+                    "Footer": f"Debentures · ₹{str(round(deb_os_amt / 10000000, 2))} Bn O/S"
                 }
             },
             "table": exposure_table

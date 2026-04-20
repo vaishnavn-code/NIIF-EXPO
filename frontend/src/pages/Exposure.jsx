@@ -226,6 +226,7 @@ export default function Exposure({ data }) {
               key={key}
               label={item.Subtitle}
               value={Number(item.Title)}
+              footer={item.Footer}
               accent={`c${index + 1}`}
             />
           );

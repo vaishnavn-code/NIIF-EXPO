@@ -11,18 +11,32 @@ import { fmt } from "../utils/formatters";
 import { TOP_N_OPTIONS } from "../utils/constants";
 
 export default function Transactions({ data }) {
+
   const txn = data?.transactions || {};
+  const customer = data?.overview?.kpi || {};
   const txnTable = txn.table || [];
   const charts = txn.charts || {};
   const kpis = txn.kpi || {};
 
   const [topN, setTopN] = useState(10);
-
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
   // KPI
   const totalTxn = kpis?.Total_Transactions?.title || 0;
+  const totalCust = customer?.Total_Sanction?.Footer || 0;
   const avgSanction = kpis?.Average_Sanction?.title || 0;
   const principalRecv = kpis?.Principal_Recieved?.title || 0;
   const currentFY = kpis?.Current_FY_Disb?.title || 0;
+
+  const RATE_COLORS = [
+    '#1565c0',
+    '#1e88e5',
+    '#42a5f5',
+    '#90caf9',
+    '#fb8c00',
+    '#e65100',
+    '#c62828'
+  ];
 
   // Loan Size
   const loanSizeData = Object.entries(
@@ -51,7 +65,8 @@ export default function Transactions({ data }) {
       quarter,
       value: +(v.sanction_amount / 1e9).toFixed(2),
     }))
-    .sort((a, b) => a.quarter.localeCompare(b.quarter));
+    .sort((a, b) => a.quarter.localeCompare(b.quarter))
+    .slice(-8);
 
   // Donuts
   const productDonut = Object.entries(charts["Product Type"]?.values || {}).map(
@@ -100,32 +115,192 @@ export default function Transactions({ data }) {
       value: +(g.principal / 1e9).toFixed(2),
     }));
 
-  // Table
   const TXN_COLUMNS = [
-    { key: "proposal_id", label: "Proposal ID" },
-    { key: "customer", label: "Customer" },
+    {
+      key: "proposal_id",
+      label: "Proposal ID",
+      render: (v) => {
+        if (!v) return "";
+
+        const cleaned = String(v).replace(/^0+/, "") || "0";
+
+        return (
+          <span style={{ fontWeight: 700 }}>
+            {cleaned}
+          </span>
+        );
+      },
+    }, { key: "customer", label: "Customer" },
     { key: "group", label: "Group" },
-    { key: "product", label: "Product" },
+    {
+      key: "product",
+      label: "Product",
+      render: (v) => {
+        if (!v) return "";
+
+        const type = v.split("-")[0].trim().toUpperCase();
+
+        const styles = {
+          base: {
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "4px 10px",
+            borderRadius: 20,
+            fontSize: 12,
+            fontWeight: 600,
+            width: "fit-content",
+          },
+          dot: (color) => ({
+            width: 6,
+            height: 6,
+            borderRadius: "50%",
+            background: color,
+          }),
+        };
+
+        const config = {
+          TL: {
+            bg: "#E3F2FD",
+            text: "#1565C0",
+            dot: "#1565C0",
+          },
+          DEB: {
+            bg: "#E0F7FA",
+            text: "#00ACC1",
+            dot: "#00ACC1",
+          },
+        };
+
+        const cfg = config[type] || {
+          bg: "#ECEFF1",
+          text: "#607D8B",
+          dot: "#607D8B",
+        };
+
+        return (
+          <span
+            style={{
+              ...styles.base,
+              background: cfg.bg,
+              color: cfg.text,
+            }}
+          >
+            <span style={styles.dot(cfg.dot)} />
+            {type}
+          </span>
+        );
+      },
+    },
     { key: "start_date", label: "Start Date" },
     { key: "end_date", label: "End Date" },
     {
       key: "sanction_amt",
       label: "Sanction",
-      render: (v) => fmt.mn(v),
+      render: (v) => fmt.cr(v),
     },
     {
       key: "outstanding_amt",
       label: "Outstanding",
       render: (v) => (
-        <span style={{ color: "#1565c0", fontWeight: 700 }}>{fmt.mn(v)}</span>
+        <span style={{ color: "#1565c0", fontWeight: 700 }}>{fmt.cr(v)}</span>
       ),
     },
-    { key: "rate", label: "Rate" },
-    { key: "int_recv", label: "Interest", render: (v) => fmt.mn(v) },
-    { key: "princ_recv", label: "Principal", render: (v) => fmt.mn(v) },
-    { key: "upcoming_int", label: "Upcoming", render: (v) => fmt.mn(v) },
-  ];
+    {
+      key: "exposure_amt",
+      label: "Exposure",
+      render: (v) => fmt.cr(v),
+    },
+    {
+      key: "rate",
+      label: "Rate",
+      render: (v) => {
+        if (v === null || v === undefined) return "";
 
+        const rate = Number(v);
+
+        let bg = "#E3F2FD";   // default (blue-ish)
+        let text = "#1E88E5";
+
+        if (rate < 8) {
+          bg = "#E8F5E9";    // light green
+          text = "#43A047";
+        } else if (rate > 9) {
+          bg = "#FFF3E0";    // light orange
+          text = "#FB8C00";
+        }
+
+        return (
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "4px 10px",
+              borderRadius: 20,
+              fontSize: 12,
+              fontWeight: 600,
+              background: bg,
+              color: text,
+            }}
+          >
+            <span
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: "50%",
+                background: text,
+              }}
+            />
+            {rate}%
+          </span>
+        );
+      },
+    },
+    { key: "princ_recv", label: "Principal", render: (v) => fmt.cr(v) },
+    { key: "int_recv", label: "Interest", render: (v) => fmt.cr(v) },
+    { key: "upcoming_int", label: "Upcoming", render: (v) => fmt.cr(v) },
+    {
+      key: "asset_class",
+      label: "Asset Class",
+      render: (v) => {
+        if (!v) return "";
+
+        const styles = {
+          base: {
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "4px 10px",
+            borderRadius: 20,
+            fontSize: 12,
+            fontWeight: 600,
+            width: "fit-content",
+            background: "#E8F5E9",
+            color: "#43A047",
+          },
+          dot: {
+            width: 6,
+            height: 6,
+            borderRadius: "50%",
+            background: "#43A047",
+          },
+        };
+
+        return (
+          <span style={styles.base}>
+            <span style={styles.dot} />
+            {v}
+          </span>
+        );
+      },
+    }
+  ];
+  const paginatedRows = txnTable.slice(
+    (page - 1) * PAGE_SIZE,
+    page * PAGE_SIZE
+  );
+  const totalPages = Math.ceil(txnTable.length / PAGE_SIZE);
   return (
     <div>
       <div className="section-label">Transaction Analytics</div>
@@ -136,8 +311,8 @@ export default function Transactions({ data }) {
             label: "Volume",
             bgColor: "#E8F1FF",
             textColor: "#1D4ED8",
-          }}/>
-        <KpiCard label="Avg Sanction" value={`₹${fmt.mn(avgSanction)}`} iconName="dollar"
+          }} />
+        <KpiCard label="Avg Sanction" value={`${fmt.mn(avgSanction)}`} iconName="dollar"
           badge={{
             label: "Avg Size",
             bgColor: "#E0F7FA",
@@ -145,7 +320,7 @@ export default function Transactions({ data }) {
           }} />
         <KpiCard
           label="Principal Received"
-          value={`₹${fmt.bn(principalRecv)}`}
+          value={`${fmt.bn(principalRecv)}`}
           iconName="storage"
           badge={{
             label: "Recipts",
@@ -193,9 +368,7 @@ export default function Transactions({ data }) {
         <div className="chart-card">
           <div className="chart-title">Rate Band Split</div>
           <div className="chart-subtitle">LOANS BY INTEREST RATE BUCKET</div>
-          <DonutChart data={rateDonut} />
-
-          {/* ✅ LEGEND */}
+          <DonutChart data={rateDonut} colors={RATE_COLORS} />
           <div
             style={{
               marginTop: 16,
@@ -223,15 +396,7 @@ export default function Transactions({ data }) {
                       width: 8,
                       height: 8,
                       borderRadius: "50%",
-                      background: [
-                        "#1e88e5",
-                        "#42a5f5",
-                        "#90caf9",
-                        "#64b5f6",
-                        "#fb8c00",
-                        "#ef6c00",
-                        "#e53935",
-                      ][i % 7],
+                      background: RATE_COLORS[i % RATE_COLORS.length],
                     }}
                   />
                   <span>{r.name}</span>
@@ -242,6 +407,41 @@ export default function Transactions({ data }) {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+      <div className="two-col">
+        <div className="chart-card">
+          <div className="chart-title">Top Groups by Sanction</div>
+          <div className="chart-subtitle" style={{ marginBottom: "10px" }}>
+            ₹ BILLIONS
+          </div>
+          <TopNSelector
+            options={TOP_N_OPTIONS}
+            value={topN}
+            onChange={setTopN}
+          />
+          <VerticalBar
+            data={topGroupsSanction}
+            dataKey="value"
+            nameKey="label"
+          />
+        </div>
+
+        <div className="chart-card">
+          <div className="chart-title">Top Groups by Principal Collected</div>
+          <div className="chart-subtitle" style={{ marginBottom: "10px" }}>
+            ₹ BILLIONS
+          </div>
+          <TopNSelector
+            options={TOP_N_OPTIONS}
+            value={topN}
+            onChange={setTopN}
+          />
+          <VerticalBar
+            data={topGroupsPrincipal}
+            dataKey="value"
+            nameKey="label"
+          />
         </div>
       </div>
 
@@ -291,53 +491,23 @@ export default function Transactions({ data }) {
         </div>
       </div>
 
-      <div className="two-col">
-        <div className="chart-card">
-          <div className="chart-title">Top Groups by Sanction</div>
-          <div className="chart-subtitle" style={{ marginBottom: "10px" }}>
-            ₹ BILLIONS
-          </div>
-          <TopNSelector
-            options={TOP_N_OPTIONS}
-            value={topN}
-            onChange={setTopN}
-          />
-          <VerticalBar
-            data={topGroupsSanction}
-            dataKey="value"
-            nameKey="label"
-          />
-        </div>
 
-        <div className="chart-card">
-          <div className="chart-title">Top Groups by Collected</div>
-          <div className="chart-subtitle" style={{ marginBottom: "10px" }}>
-            ₹ BILLIONS
-          </div>
-          <TopNSelector
-            options={TOP_N_OPTIONS}
-            value={topN}
-            onChange={setTopN}
-          />
-          <VerticalBar
-            data={topGroupsPrincipal}
-            dataKey="value"
-            nameKey="label"
-          />
-        </div>
-      </div>
 
       <div className="card">
+        <div class="card-title">All Disbursements <span class="card-badge" id="txnBadge"></span></div>
+        <div class="cio-note">
+          Searchable register of all {totalTxn} disbursement transactions across {totalCust}. Filter by product, rate band, or tenor.
+        </div>
         <DataTable
           columns={TXN_COLUMNS}
-          rows={txnTable}
+          rows={paginatedRows}
           total={txnTable.length}
-          page={1}
-          totalPages={1}
-          onPage={() => {}}
+          page={page}
+          totalPages={totalPages}
+          onPage={setPage}
           sortBy={null}
           sortDir={null}
-          onSort={() => {}}
+          onSort={() => { }}
           loading={false}
         />
       </div>
