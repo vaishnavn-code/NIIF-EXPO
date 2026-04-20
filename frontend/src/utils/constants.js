@@ -5,7 +5,7 @@ export const NAV_PAGES = [
   { id: 'loans', label: 'Loan Portfolio',      section: 'Data Views' },
   { id: 'rates',        label: 'Interest & Rates',  section: 'Data Views' },
   { id: 'borrowers',    label: 'Borrower Views',         section: 'Data Views' },
-  { id: 'transactions', label: 'Transactions',      section: 'Data Views' },
+  { id: 'transactions', label: 'Transactions',      section: '' },
 
 ]
 
