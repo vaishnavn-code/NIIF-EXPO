@@ -518,7 +518,9 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
     """
     rows = _extract_cof_rows(raw_data)
     rows = _require_cof_rows(rows)
-
+    today = datetime.today()
+    total_remaining_days = 0
+    remaining_count = 0
     # Initialize aggregations
     total_sanction = 0.0
     total_os_amt = 0.0
@@ -534,6 +536,7 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
     total_int_due = 0.0
     tl_os_amt = 0.0
     deb_os_amt = 0.0
+    total_sanction_2026 = 0.0
     customer_set = set()
     disb_set = set()
     fy_2026_disb_set = set()
@@ -659,15 +662,16 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
         rate_buckets_disb_counts = {
             k: len(v) for k, v in rate_buckets_disb.items()
         }
-        # Disbursements activity by month
         start_date = format_date_yyyy_mm_dd(row.get("Start Date"))
 
         if start_date:
             try:
                 date_obj = datetime.strptime(start_date, "%Y-%m-%d")
 
-                if date_obj.year == 2026 and disb_no:
-                    fy_2026_disb_set.add(disb_no)
+                if date_obj.year == 2026:
+                    total_sanction_2026 += sanction_amt   
+                    if disb_no:
+                        fy_2026_disb_set.add(disb_no)
                 month_key = date_obj.strftime("%Y-%m-%d")
                 year_key = date_obj.strftime("%Y")
                 quarter = f"{date_obj.year}Q{(date_obj.month - 1)//3 + 1}"
@@ -711,9 +715,21 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
 
                 if tenor_yrs < 0:
                     tenor_yrs = 0
-
+    
             except Exception as e:
                 print("Tenor calculation failed:", e)
+
+        if end_date_str:
+            try:
+                end_date_obj = datetime.strptime(end_date_str, "%Y-%m-%d")
+
+                remaining_days = abs((end_date_obj - today).days)
+
+                total_remaining_days += remaining_days
+                remaining_count += 1
+            except Exception as e:
+                print("Remaining tenor calc failed:", e)
+
        # Tenor distribution counts for disbursements
         if disb_no:
             if tenor_yrs <= 5:
@@ -786,6 +802,11 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
             "int_recv": int_rec,
             "avg_rate": interest_rate
         })
+    
+    avg_remaining_years = (
+    (total_remaining_days / remaining_count) / 365
+    if remaining_count else 0
+    )
     # Average Interest Rate
     avg_interest_rate = (total_interest_rate / len(rows)) if rows else 0
     # Build exposure table
@@ -844,6 +865,11 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
     tl_count = sum(1 for row in rows if "TL" in str(row.get("Prd Type Desc", "")).upper())
     deb_count = sum(1 for row in rows if "DEB" in str(row.get("Prd Type Desc", "")).upper())
 
+    disb_ratio_2026 = (
+    (len(fy_2026_disb_set) / len(disb_set)) * 100
+    if disb_set else 0
+    )
+
     # Build the new response format
     response = {
         "overview": {
@@ -866,7 +892,7 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
                "Avg_IntRate": {
                     "Title": f"{avg_interest_rate:.2f} %",
                     "Subtitle": f"Range: {min_interest_rate:.2f}% - {max_interest_rate:.2f}% pa",
-                    "Footer": ""
+                    "Footer": f"Avg Tenor: {avg_remaining_years:.2f} years"
                 }
             },
             "charts": {
@@ -958,7 +984,8 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
       "Average_Sanction": {
         "title": str(round(total_sanction / len(disb_set), 2)) if disb_set else "0",
         "subtitle": f"Max: ₹{round(max_sanc_amt / 1e9, 2)} Bn · Min: ₹{round(min_sanc_amt / 1e6, 2)} Mn",
-        "footer": ""
+        "footer": f"Avg tenor: {avg_remaining_years:.2f} yrs"
+
       },
       "Principal_Recieved": {
         "title": str(round(total_prin_rec, 2)),
@@ -967,8 +994,8 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
       },
       "Current_FY_Disb": {
         "title": str(len(fy_2026_disb_set)),
-        "subtitle": "",
-        "footer": ""
+        "subtitle": f"{total_sanction_2026/1e7:,.2f} Cr sanctioned (2026)",
+        "footer": f"{disb_ratio_2026:.2f}% of total portfolio by count"
       }
     },
     "charts": {
