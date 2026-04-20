@@ -546,7 +546,14 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
     tenor_buckets = {"0-5 Years": set(),"5-10 Years": set(),"10-15 Years": set(),"15-20 Years": set(),"20-25 Years": set(),"25-30 Years": set(),">30 Years": set()}    
     rate_buckets = {"<7 %": 0, "7-9 %": 0, "9-12 %": 0, ">12 %": 0}
     rate_buckets_disb = {"<7%": set(), "7-8%": set(), "8-8.5%": set(), "8.5-9%": set(), "9-9.5%": set(), "9.5-10%": set(),">10%": set()}
-    sanction_buckets_disb = {"<0.5Bn": set(),"0.5-1Bn": set(),"1-2Bn": set(),"2-5Bn": set(),"5-10Bn": set(),"10-20Bn": set(),"20-50Bn": set(),">50Bn": set()}
+    sanction_buckets_disb = {
+        "<5 Cr": set(),
+        "5-10 Cr": set(),
+        "10-15 Cr": set(),
+        "15-20 Cr": set(),
+        "20-25 Cr": set(),
+        "25+ Cr": set()
+    }
     disbursements_activity = {}
     disbursements_by_year = {}
     disbursments_by_quarter = {}
@@ -751,23 +758,20 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
         }
         # Sanction amount buckets for disbursements
         if disb_no:
-            amt = sanction_amt  # already float
-            if amt < 0.5e9:
-                sanction_buckets_disb["<0.5Bn"].add(disb_no)
-            elif amt < 1e9:
-                sanction_buckets_disb["0.5-1Bn"].add(disb_no)
-            elif amt < 2e9:
-                sanction_buckets_disb["1-2Bn"].add(disb_no)
-            elif amt < 5e9:
-                sanction_buckets_disb["2-5Bn"].add(disb_no)
-            elif amt < 10e9:
-                sanction_buckets_disb["5-10Bn"].add(disb_no)
-            elif amt < 20e9:
-                sanction_buckets_disb["10-20Bn"].add(disb_no)
-            elif amt < 50e9:
-                sanction_buckets_disb["20-50Bn"].add(disb_no)
+            amt_cr = sanction_amt / 1e7   # convert to Cr
+
+            if amt_cr < 5:
+                sanction_buckets_disb["<5 Cr"].add(disb_no)
+            elif amt_cr < 10:
+                sanction_buckets_disb["5-10 Cr"].add(disb_no)
+            elif amt_cr < 15:
+                sanction_buckets_disb["10-15 Cr"].add(disb_no)
+            elif amt_cr < 20:
+                sanction_buckets_disb["15-20 Cr"].add(disb_no)
+            elif amt_cr < 25:
+                sanction_buckets_disb["20-25 Cr"].add(disb_no)
             else:
-                sanction_buckets_disb[">50Bn"].add(disb_no)
+                sanction_buckets_disb["25+ Cr"].add(disb_no)
         sanction_buckets_disb_counts = {
             k: len(v) for k, v in sanction_buckets_disb.items()
         }

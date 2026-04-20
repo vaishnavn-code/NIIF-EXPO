@@ -15,6 +15,7 @@ import React from "react";
 const PAGE_TITLES = {
   overview: "Portfolio Overview",
   exposure: "Exposure Analytics",
+  loans: "Loan Portfolio",
   rates: "Interest Rate & Tenor Analysis",
   borrowers: "Borrower / Customer View",
   transactions: "Transaction Analytics",
