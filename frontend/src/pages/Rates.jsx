@@ -130,7 +130,8 @@ export default function Rates({ data }) {
             nameKey="label"
             color="url(#ratePurpleGrad)"
             barSize={44}
-          />
+            formatter={(v) => `₹${Number(v).toLocaleString("en-IN")} Cr`}
+            />
         </div>
         <div className="chart-card">
           <div className="chart-title">Tenor Profile</div>
@@ -140,6 +141,7 @@ export default function Rates({ data }) {
             dataKey="count"
             nameKey="label"
             barSize={44}
+            formatter={(v) => `₹${Number(v).toLocaleString("en-IN")} Cr`}
           />
         </div>
       </div>
@@ -147,7 +149,7 @@ export default function Rates({ data }) {
       <div className="two-col">
         <div className="chart-card">
           <div className="chart-title">Interest Received vs Due</div>
-          <div className="chart-subtitle" style={{marginBottom : "20px"}}>COLLECTION EFFICIENCY (₹ BN)</div>
+          <div className="chart-subtitle" style={{marginBottom : "20px"}}>COLLECTION EFFICIENCY (₹ Cr)</div>
           {/* <GroupedBar
             data={collectionData}
             nameKey="name"
@@ -175,7 +177,6 @@ export default function Rates({ data }) {
             dataKey="value"
             nameKey="name"
             color="url(#tenorOrangeGrad)"
-            formatter={(v) => `₹${v}Mn`}
           />
         </div>
       </div>

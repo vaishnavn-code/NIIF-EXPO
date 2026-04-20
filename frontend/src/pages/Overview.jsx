@@ -670,7 +670,6 @@ export default function Overview({ data }) {
             nameKey="label"
             height={260}
             barSize={20}
-            formatter={(v) => `₹${v} Cr`}
           />
         </div>
         <div className="chart-card">
@@ -698,6 +697,7 @@ export default function Overview({ data }) {
             dataKey="count"
             nameKey="label"
             height={220}
+            formatter={(v) => `₹${Number(v).toLocaleString("en-IN")} Cr`}
           />
         </div>
         <div className="chart-card">
@@ -708,6 +708,7 @@ export default function Overview({ data }) {
             dataKey="count"
             nameKey="label"
             height={220}
+            formatter={(v) => `₹${Number(v).toLocaleString("en-IN")} Cr`}
           />
         </div>
       </div>
@@ -733,6 +734,7 @@ export default function Overview({ data }) {
               },
             ]}
             height={280}
+            formatter={(v) => `₹${Number(v).toLocaleString("en-IN")} Cr`}
           />
         </div>
         <div className="chart-card">
@@ -742,7 +744,7 @@ export default function Overview({ data }) {
             data={collectionDonut}
             colors={["#1565c0", "#00acc1", "#90caf9"]}
             height={220}
-            formatter={(v) => `₹${v} Cr`}
+            formatter={(v) => `₹${Number(v).toLocaleString("en-IN")} Cr`}
           />
           <DonutLegend
             data={collectionDonut}
