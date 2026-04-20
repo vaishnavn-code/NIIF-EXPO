@@ -159,10 +159,10 @@ export default function Exposure({ data }) {
       .map((g) => ({
         name: g.bp_group,
 
-        // ✅ CORRECT KEYS
-        Sanction: Number(g.sanction_amt || 0) / 1e9,
-        "Loan Amt": Number(g.loan_amt || 0) / 1e9,
-        Outstanding: Number(g.outstanding_amt || 0) / 1e9,
+        // CORRECT KEYS
+        Sanction: Number(g.sanction_amt || 0),
+"Loan Amt": Number(g.loan_amt || 0),
+Outstanding: Number(g.outstanding_amt || 0),
       }))
       .sort((a, b) => b.Outstanding - a.Outstanding) // 🔥 important
       .slice(0, topN.triple);
@@ -174,7 +174,7 @@ export default function Exposure({ data }) {
   return exposureTable
     .map((g) => ({
       name: g.bp_group,
-      value: Number(g.int_recv || 0) / 1e6, // ₹ Mn
+      value: Number(g.int_recv || 0), // ₹ Mn
     }))
     .sort((a, b) => b.value - a.value) // 🔥 descending
     .slice(0, topN.intBar);
@@ -316,6 +316,7 @@ export default function Exposure({ data }) {
             height={260}
             barSize={12}
             unit="%"
+            formatter={(v) => `${v}%`}
           />
         </div>
       </div>

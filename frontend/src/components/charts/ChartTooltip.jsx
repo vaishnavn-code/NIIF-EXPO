@@ -19,9 +19,24 @@ export function UnifiedChartTooltip({
 }) {
   if (!active || !payload || payload.length === 0) return null;
 
-  const rows = payload.filter(
-    (entry) => entry && entry.value !== undefined && entry.value !== null,
-  );
+  const uniqueMap = {};
+
+  payload.forEach((entry) => {
+    if (!entry || entry.value === undefined || entry.value === null) return;
+
+    // skip area duplicate (same dataKey)
+    if (!uniqueMap[entry.dataKey]) {
+      uniqueMap[entry.dataKey] = entry;
+    }
+  });
+
+  const colorMap = {
+    loan: "rgba(21,101,192,0.9)", // blue
+    sanction: "rgba(144,202,249,0.9)", // light blue
+    outstanding: "#00acc1", // teal
+  };
+
+  const rows = Object.values(uniqueMap);
 
   if (!rows.length) return null;
 
@@ -70,14 +85,16 @@ export function UnifiedChartTooltip({
 
       {rows.map((entry, index) => {
         const markerColor =
-          entry.color || entry.stroke || entry.fill || "#6a9cbf";
+          entry.color ||
+          entry.stroke ||
+          colorMap[entry.dataKey] || // 👈 move this UP
+          "#6a9cbf";
         const rawNumeric = Number(entry.value);
         const lineWidthPct =
           showValueBars && Number.isFinite(rawNumeric) && maxValue > 0
             ? Math.max(8, Math.round((rawNumeric / maxValue) * 100))
             : 0;
-        const lineColor =
-          index === 0 ? markerColor : "rgba(130, 148, 168, 0.28)";
+        const lineColor = markerColor;
 
         const formattedValue = valueFormatter
           ? valueFormatter(entry.value, entry.name, entry, label)

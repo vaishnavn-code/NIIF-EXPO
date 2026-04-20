@@ -31,7 +31,7 @@ export function VerticalBar({
 }) {
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <BarChart data={data} margin={{ top: 25, right: 8, left: 0, bottom: 4 }}>
+      <BarChart data={data} margin={{ top: 25, right: 8, left: 0, bottom: 80 }}>
         <CartesianGrid
           stroke="rgba(0,0,0,0.08)"
           horizontal={true}
@@ -42,23 +42,28 @@ export function VerticalBar({
           interval={0}
           tickLine={false}
           axisLine={false}
-          height={40} //reduced since no rotation
+          height={10}
           tick={({ x, y, payload }) => {
             let value = payload.value || "";
 
-            // Replace Years → Y
+            // ✅ KEEP THIS (your requirement)
             value = value.replace("Years", "Y");
+
+            // ✅ Handle long names safely
+            const displayValue =
+              value.length > 20 ? value.slice(0, 20) + "..." : value;
 
             return (
               <text
                 x={x}
-                y={y + 14}
-                textAnchor="middle"
+                y={y + 10}
+                textAnchor="end"
                 fill="var(--text-muted)"
                 fontSize={10}
                 fontFamily="Inter"
+                transform={`rotate(-35, ${x}, ${y})`} // 👈 slant
               >
-                {value}
+                {displayValue}
               </text>
             );
           }}
@@ -71,7 +76,7 @@ export function VerticalBar({
           }}
           tickLine={false}
           axisLine={false}
-          tickFormatter={(v) => fmt.cr(v)}
+          tickFormatter={(v) => (formatter ? formatter(v) : fmt.cr(v))}
         />
         <Tooltip
           cursor={{ fill: "transparent" }}
@@ -87,23 +92,31 @@ export function VerticalBar({
           </linearGradient>
 
           <linearGradient id="intGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="rgba(40, 186, 204, 1)" />
-            <stop offset="100%" stopColor="rgba(40, 186, 204, 0.2)" />
+            <stop offset="0%" stopColor="rgba(111, 164, 221, 1)" />{" "}
+            {/* TOP = dark */}
+            <stop offset="100%" stopColor="rgba(220, 238, 253, 1)" />{" "}
+            {/* BOTTOM = light */}
           </linearGradient>
 
           <linearGradient id="rateGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="rgba(168, 105, 194, 1)" />
-            <stop offset="100%" stopColor="rgba(168, 105, 194, 0.2)" />
+            <stop offset="0%" stopColor="rgba(111, 164, 221, 1)" />{" "}
+            {/* TOP = dark */}
+            <stop offset="100%" stopColor="rgba(220, 238, 253, 1)" />{" "}
+            {/* BOTTOM = light */}
           </linearGradient>
 
           <linearGradient id="ratePurpleGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="rgba(145, 67, 177, 1)" />
-            <stop offset="100%" stopColor="rgba(145, 67, 177, 0.2)" />
+            <stop offset="0%" stopColor="rgba(111, 164, 221, 1)" />{" "}
+            {/* TOP = dark */}
+            <stop offset="100%" stopColor="rgba(220, 238, 253, 1)" />{" "}
+            {/* BOTTOM = light */}
           </linearGradient>
 
           <linearGradient id="tenorOrangeGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="rgba(251, 159, 42, 1)" />
-            <stop offset="100%" stopColor="rgba(251, 159, 42, 0.2)" />
+            <stop offset="0%" stopColor="rgba(111, 164, 221, 1)" />{" "}
+            {/* TOP = dark */}
+            <stop offset="100%" stopColor="rgba(220, 238, 253, 1)" />{" "}
+            {/* BOTTOM = light */}
           </linearGradient>
 
           <linearGradient id="principalGrad" x1="0" y1="0" x2="0" y2="1">
@@ -454,6 +467,7 @@ export function VerticalBarWithLineOverview({ data, height = 320, viewMode }) {
           dataKey="outstanding"
           fill="url(#outstandingAreaGrad)"
           stroke="none"
+          tooltipType="none"
         />
 
         <Line

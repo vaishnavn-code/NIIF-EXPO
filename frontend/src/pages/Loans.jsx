@@ -1,17 +1,13 @@
-import React from "react";
 import DataTable from "../components/ui/DataTable";
 import { fmt } from "../utils/formatters";
+import React, { useState, useMemo } from "react";
 
 const COLUMNS = [
   // 🖤 Proposal ID (bold black)
   {
     key: "proposal_id",
     label: "Proposal ID",
-    render: (v) => (
-      <span style={{ fontWeight: 700, color: "#111" }}>
-        {v}
-      </span>
-    ),
+    render: (v) => <span style={{ fontWeight: 700, color: "#111" }}>{v}</span>,
   },
 
   { key: "customer", label: "Customer" },
@@ -19,11 +15,7 @@ const COLUMNS = [
   {
     key: "group",
     label: "Group",
-    render: (v) => (
-      <span style={{ fontWeight: 700 }}>
-        {v}
-      </span>
-    ),
+    render: (v) => <span style={{ fontWeight: 700 }}>{v}</span>,
   },
 
   // 🔵 Product badge
@@ -71,9 +63,7 @@ const COLUMNS = [
     key: "outstanding_amt",
     label: "Outstanding (₹ Mn)",
     render: (v) => (
-      <span style={{ fontWeight: 700, color: "#1565c0" }}>
-        {fmt.mn(v)}
-      </span>
+      <span style={{ fontWeight: 700, color: "#1565c0" }}>{fmt.mn(v)}</span>
     ),
   },
 
@@ -161,6 +151,16 @@ const COLUMNS = [
 export default function Loans({ data }) {
   const rows = data?.loan_portfolio?.table || [];
 
+  const [page, setPage] = useState(1);
+  const PER_PAGE = 25;
+
+  const paginatedRows = useMemo(() => {
+    const start = (page - 1) * PER_PAGE;
+    return rows.slice(start, start + PER_PAGE);
+  }, [rows, page]);
+
+  const totalPages = Math.ceil(rows.length / PER_PAGE);
+
   return (
     <div>
       <div className="section-label">Loans Analytics</div>
@@ -177,11 +177,11 @@ export default function Loans({ data }) {
 
         <DataTable
           columns={COLUMNS}
-          rows={rows}
+          rows={paginatedRows}
           total={rows.length}
-          page={1}
-          totalPages={1}
-          onPage={() => {}}
+          page={page}
+          totalPages={totalPages}
+          onPage={(p) => setPage(p)}
           sortBy={null}
           sortDir={null}
           onSort={() => {}}

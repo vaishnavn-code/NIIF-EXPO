@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { HorizontalBar } from "../components/charts/BarCharts";
+import React, { useState, useMemo } from "react";
+import { HorizontalBar, VerticalBar } from "../components/charts/BarCharts";
 import DataTable from "../components/ui/DataTable";
 import { TopNSelector } from "../components/ui/helpers";
 import { fmt } from "../utils/formatters";
@@ -80,6 +80,8 @@ const COLUMNS = [
 ];
 
 export default function Borrowers({ data }) {
+  const [page, setPage] = useState(1);
+const PER_PAGE = 25;
   const [topN, setTopN] = useState({ outstanding: 15, sanction: 15 });
 
   const borrowersTable = data?.borrowers?.table || [];
@@ -105,7 +107,7 @@ export default function Borrowers({ data }) {
     .slice(0, topN.outstanding)
     .map((c) => ({
       name: c.customer,
-      value: +(c.outstanding / 1e9).toFixed(2),
+      value: c.outstanding
     }));
 
   const sancData = borrowersTable
@@ -114,8 +116,16 @@ export default function Borrowers({ data }) {
     .slice(0, topN.sanction)
     .map((c) => ({
       name: c.customer,
-      value: +(c.sanction_amt / 1e9).toFixed(2),
+      value: c.sanction_amt
     }));
+
+    const paginatedRows = useMemo(() => {
+  const start = (page - 1) * PER_PAGE;
+  return borrowersTable.slice(start, start + PER_PAGE);
+}, [borrowersTable, page]);
+
+
+const totalPages = Math.ceil(borrowersTable.length / PER_PAGE);
 
   return (
     <div>
@@ -124,7 +134,7 @@ export default function Borrowers({ data }) {
       {/* CHARTS */}
       <div className="two-col">
         <div className="chart-card">
-          <div className="chart-title">Top Customers by Outstanding</div>
+          <div className="chart-title">Top {topN.outstanding} Customers by Outstanding</div>
           <div className="chart-subtitle">₹ BILLIONS</div>
 
           <TopNSelector
@@ -135,17 +145,17 @@ export default function Borrowers({ data }) {
             }
           />
 
-          <HorizontalBar
+          <VerticalBar
             data={osData}
             dataKey="value"
             nameKey="name"
-            color="var(--blue)"
+            color="url(#intGrad)"
             formatter={(v) => `₹${v}Bn`}
           />
         </div>
 
         <div className="chart-card">
-          <div className="chart-title">Top Customers by Sanction</div>
+          <div className="chart-title">Top {topN.sanction} Customers by Sanction</div>
           <div className="chart-subtitle">₹ BILLIONS</div>
 
           <TopNSelector
@@ -156,11 +166,11 @@ export default function Borrowers({ data }) {
             }
           />
 
-          <HorizontalBar
+          <VerticalBar
             data={sancData}
             dataKey="value"
             nameKey="name"
-            color="var(--teal)"
+            color="url(#intGrad)"
             formatter={(v) => `₹${v}Bn`}
           />
         </div>
@@ -184,11 +194,11 @@ export default function Borrowers({ data }) {
 
         <DataTable
           columns={COLUMNS}
-          rows={borrowersTable}
+          rows={paginatedRows}
           total={borrowersTable.length}
           page={1}
-          totalPages={1}
-          onPage={() => {}}
+          totalPages={totalPages}
+          onPage={(p) => setPage(p)}
           sortBy={null}
           sortDir={null}
           onSort={() => {}}
