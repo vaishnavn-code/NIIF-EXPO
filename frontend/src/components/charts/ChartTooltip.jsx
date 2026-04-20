@@ -1,4 +1,5 @@
 import React from "react";
+import { fmt } from "../../utils/formatters";
 
 function defaultValueFormatter(value) {
   if (typeof value === "number") {
@@ -19,7 +20,7 @@ export function UnifiedChartTooltip({
   if (!active || !payload || payload.length === 0) return null;
 
   const rows = payload.filter(
-    (entry) => entry && entry.value !== undefined && entry.value !== null
+    (entry) => entry && entry.value !== undefined && entry.value !== null,
   );
 
   if (!rows.length) return null;
@@ -68,17 +69,21 @@ export function UnifiedChartTooltip({
       )}
 
       {rows.map((entry, index) => {
-        const markerColor = entry.color || entry.stroke || entry.fill || "#6a9cbf";
+        const markerColor =
+          entry.color || entry.stroke || entry.fill || "#6a9cbf";
         const rawNumeric = Number(entry.value);
         const lineWidthPct =
           showValueBars && Number.isFinite(rawNumeric) && maxValue > 0
             ? Math.max(8, Math.round((rawNumeric / maxValue) * 100))
             : 0;
-        const lineColor = index === 0 ? markerColor : "rgba(130, 148, 168, 0.28)";
+        const lineColor =
+          index === 0 ? markerColor : "rgba(130, 148, 168, 0.28)";
 
         const formattedValue = valueFormatter
           ? valueFormatter(entry.value, entry.name, entry, label)
-          : defaultValueFormatter(entry.value);
+          : entry.dataKey === "loan" || entry.dataKey === "count"
+            ? fmt.int(entry.value) // counts
+            : fmt.cr(entry.value); // ₹ Cr everywhere
 
         return (
           <div
@@ -86,7 +91,8 @@ export function UnifiedChartTooltip({
             style={{
               paddingTop: index === 0 ? 0 : 7,
               marginTop: index === 0 ? 0 : 7,
-              borderTop: index === 0 ? "none" : "1px solid rgba(130, 148, 168, 0.22)",
+              borderTop:
+                index === 0 ? "none" : "1px solid rgba(130, 148, 168, 0.22)",
             }}
           >
             <div

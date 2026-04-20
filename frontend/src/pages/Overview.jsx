@@ -49,6 +49,7 @@ export default function Overview({ data }) {
   // }
   const [topN, setTopN] = useState(15);
   const [viewMode, setViewMode] = useState("monthly");
+  const [selectedYear, setSelectedYear] = useState("All");
 
   const kpi = data?.overview?.kpi || {};
   const productDonut = useMemo(() => {
@@ -136,6 +137,20 @@ export default function Overview({ data }) {
       .slice(0, 10); // ✅ top 10
   }, [data]);
 
+  const availableYears = useMemo(() => {
+    const chart = data?.overview?.charts?.["Disbursements Activity"];
+
+    if (!chart?.values) return [];
+
+    return [
+      ...new Set(
+        Object.values(chart.values)
+          .map((val) => String(val?.Year || ""))
+          .filter(Boolean),
+      ),
+    ].sort((a, b) => Number(b) - Number(a));
+  }, [data]);
+
   const disbursementData = useMemo(() => {
     const chart = data?.overview?.charts?.["Disbursements Activity"];
 
@@ -147,15 +162,19 @@ export default function Overview({ data }) {
       loan: +val.loan_count,
       sanction: +val.sanction_amount,
       outstanding: +val.outstanding,
-      quarter: val.Quater,
-      year: val.Year,
+      quarter: val.Quater || val.Quarter,
+      year: String(val.Year || ""),
     }));
 
-    // ✅ HANDLE AUTO
     const mode = viewMode === "auto" ? "quarterly" : viewMode;
 
+    const filtered =
+      mode === "yearly" || selectedYear === "All"
+        ? raw
+        : raw.filter((r) => r.year === selectedYear);
+
     if (mode === "monthly") {
-      return raw.map((r) => ({
+      return filtered.map((r) => ({
         name: r.date,
         loan: r.loan,
         sanction: r.sanction,
@@ -165,11 +184,18 @@ export default function Overview({ data }) {
 
     const groupBy = (key) => {
       const map = {};
-      raw.forEach((r) => {
+      filtered.forEach((r) => {
         const k = r[key];
 
+        if (!k) return;
+
         if (!map[k]) {
-          map[k] = { name: k, loan: 0, sanction: 0, outstanding: 0 };
+          map[k] = {
+            name: `${k} - ${String(r.year).slice(-2)}`,
+            loan: 0,
+            sanction: 0,
+            outstanding: 0,
+          };
         }
 
         map[k].loan += r.loan;
@@ -180,11 +206,31 @@ export default function Overview({ data }) {
       return Object.values(map);
     };
 
-    if (mode === "quarterly") return groupBy("quarter");
-    if (mode === "yearly") return groupBy("year");
+    if (mode === "quarterly") {
+      const quarterOrder = { Q1: 1, Q2: 2, Q3: 3, Q4: 4 };
+
+      return groupBy("quarter").sort(
+        (a, b) =>
+          (quarterOrder[a.name] || Number.MAX_SAFE_INTEGER) -
+          (quarterOrder[b.name] || Number.MAX_SAFE_INTEGER),
+      );
+    }
+
+    if (mode === "yearly") {
+      return groupBy("year").sort((a, b) => Number(a.name) - Number(b.name));
+    }
 
     return [];
-  }, [data, viewMode]);
+  }, [data, selectedYear, viewMode]);
+
+  const disbursementTitle =
+    viewMode.charAt(0).toUpperCase() +
+    viewMode.slice(1) +
+    " Disbursement Activity";
+  const disbursementSubtitle =
+    viewMode === "yearly"
+      ? "YEARLY GROUPING • ALL YEARS"
+      : `${viewMode.toUpperCase()} GROUPING • ${selectedYear === "All" ? "ALL YEARS" : `YEAR ${selectedYear}`}`;
 
   // const rateSparkPct =
   //   c.max_rate > c.min_rate
@@ -366,8 +412,8 @@ export default function Overview({ data }) {
       <div className="section-label">Disbursement Activity Trend</div>
       <div className="chart-card">
         {/* TITLE */}
-        <div className="chart-title">Quarterly Disbursement Activity</div>
-        <div className="chart-subtitle">QUARTERLY GROUPING • ALL PERIODS</div>
+        <div className="chart-title">{disbursementTitle}</div>
+        <div className="chart-subtitle">{disbursementSubtitle}</div>
 
         {/* TOGGLE BUTTONS */}
         <div
@@ -483,7 +529,7 @@ export default function Overview({ data }) {
                 padding: "3px",
               }}
             >
-              {["auto", "monthly", "quarterly", "yearly"].map((mode) => (
+              {["monthly", "quarterly", "yearly"].map((mode) => (
                 <button
                   key={mode}
                   onClick={() => setViewMode(mode)}
@@ -521,7 +567,11 @@ export default function Overview({ data }) {
             </span>
           </div>
         </div>
-        <VerticalBarWithLineOverview data={disbursementData} height={320} />
+        <VerticalBarWithLineOverview
+          data={disbursementData}
+          height={320}
+          viewMode={viewMode}
+        />
       </div>
       {/* <ActivityChart timeseries={timeseries} /> */}
       <div className="section-label">Gen AI Insights</div>
@@ -627,7 +677,7 @@ export default function Overview({ data }) {
           <DonutChart
             data={productDonut}
             colors={["#1565c0", "#00acc1"]}
-            height={220}
+            height={260}
             formatter={(v) => `₹${(v || 0).toFixed(2)} Cr`}
           />
           <DonutLegend
