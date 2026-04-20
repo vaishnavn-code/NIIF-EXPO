@@ -9,7 +9,6 @@ import {
 } from "../components/charts/BarCharts";
 import { Spinner, ErrorMsg } from "../components/ui/helpers";
 import { useInsights } from "../hooks/useDashboardData";
-import { fmt } from "../utils/formatters";
 import DonutLegend from "../components/charts/DonutLegend";
 import React from "react";
 
@@ -209,6 +208,29 @@ export default function Overview({ data }) {
     return [];
   }, [data, selectedYear, viewMode]);
 
+  const formatDisplay = (v) => {
+    if (!v) return "-";
+
+    const str = String(v);
+
+    // Extract number
+    const num = parseFloat(str.replace(/₹|,|Cr|%/gi, ""));
+
+    if (isNaN(num)) return v; // return original if not numeric
+
+    // Handle %
+    if (str.includes("%")) {
+      return `${num.toFixed(2)} %`;
+    }
+
+    // Handle Cr
+    if (str.toLowerCase().includes("cr")) {
+      return `₹${num.toLocaleString("en-IN")} Cr`;
+    }
+
+    return v;
+  };
+
   const disbursementTitle =
     viewMode.charAt(0).toUpperCase() +
     viewMode.slice(1) +
@@ -300,7 +322,7 @@ export default function Overview({ data }) {
 
         <KpiCard
           label="Total Sanction"
-          value={kpi.Total_Sanction?.Title}
+          value={formatDisplay(kpi.Total_Sanction?.Title)}
           sub={kpi.Total_Sanction?.Subtitle}
           footer={kpi.Total_Sanction?.Footer}
           sparkPct={100}
@@ -329,7 +351,7 @@ export default function Overview({ data }) {
 
         <KpiCard
           label="Total Outstanding Amount"
-          value={kpi.Outstanding_Amount?.Title}
+          value={formatDisplay(kpi.Outstanding_Amount?.Title)}
           sub={kpi.Outstanding_Amount?.Subtitle}
           footer={kpi.Outstanding_Amount?.Footer}
           sparkPct={60}
@@ -339,13 +361,13 @@ export default function Overview({ data }) {
             label: "Outstanding",
             bgColor: "#E8F5E9",
             textColor: "#43A047",
-            dotColor: "#43A047", // 👈 key line for badge dot
+            dotColor: "#43A047", //  key line for badge dot
           }}
         />
 
         <KpiCard
           label="Total Exposure Amount"
-          value={kpi.Total_Exposure?.Title}
+          value={formatDisplay(kpi.Total_Exposure?.Title)}
           sub={kpi.Total_Exposure?.Subtitle}
           footer={kpi.Total_Exposure?.Footer}
           sparkPct={80}
@@ -373,7 +395,7 @@ export default function Overview({ data }) {
 
         <KpiCard
           label="Avg. Interest Rate"
-          value={kpi.Avg_IntRate?.Title}
+          value={formatDisplay(kpi.Avg_IntRate?.Title)}
           sub={kpi.Avg_IntRate?.Subtitle}
           footer={kpi.Avg_IntRate?.Footer}
           sparkPct={40}
@@ -396,8 +418,6 @@ export default function Overview({ data }) {
           }
           accent="c4"
         /> */}
-
-
       </div>
       <div className="section-label">Disbursement Activity Trend</div>
       <div className="chart-card">
