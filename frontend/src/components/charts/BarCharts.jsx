@@ -79,6 +79,7 @@ export function VerticalBar({
           tickFormatter={(v) => (formatter ? formatter(v) : fmt.cr(v))}
         />
         <Tooltip
+        cursor={{ fill: "transparent" }}
           content={buildUnifiedTooltip({
             valueFormatter: (value) =>
               `₹${Number(value).toLocaleString("en-IN")} Cr`,
