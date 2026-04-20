@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Sidebar from "./components/layout/Sidebar";
 import Header from "./components/layout/Header";
 import Overview from "./pages/Overview";
@@ -21,6 +21,8 @@ const PAGE_TITLES = {
 };
 
 export default function App() {
+  const [isExportingFull, setIsExportingFull] = useState(false);
+  const [exportStatus, setExportStatus] = useState('');
   const [page, setPage] = useState("overview");
   const [darkMode, setDark] = useState(false);
   const { data, loading, error } = useDashboardData();
@@ -62,17 +64,65 @@ export default function App() {
     }
   };
 
+  const ExportOverlay = ({ status }) => {
+    if (!status) return null;
+
+    return (
+      <div
+        id="export-overlay"
+        style={{
+          position: 'fixed',
+          inset: 0,
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(6px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 999999,
+          pointerEvents: 'none',
+        }}>
+        <div style={{
+          background: '#fff',
+          color: '#111',
+          padding: '40px 50px',
+          borderRadius: 16,
+          textAlign: 'center',
+          boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
+          minWidth: '340px',
+        }}>
+          <div style={{ fontSize: '20px', fontWeight: 700, marginBottom: 16 }}>
+            Exporting Full Report
+          </div>
+          <div style={{ fontSize: '15px', color: '#1565c0', marginBottom: 20 }}>
+            {status}
+          </div>
+          <svg viewBox="0 0 24 24" width={28} height={28} fill="none" stroke="#1565c0" strokeWidth={3} strokeLinecap="round" style={{ animation: 'spin 1s linear infinite' }}>
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+          </svg>
+        </div>
+      </div>
+    );
+  };
   return (
-    <div className="app-wrapper">
+    <div className="wrapper">
       <Sidebar activePage={page} onNavigate={setPage} />
 
       <div className="main-area">
         <Header
-        title="NIIF"
+          title="NIIF"
           subtitle={PAGE_TITLES[page]}
           darkMode={darkMode}
           onToggleDark={toggleDark}
+          activePage={page}
+          setActivePage={setPage}
+          setIsExportingFull={setIsExportingFull}
+          setExportStatus={setExportStatus}
         />
+
 
         <div className="page-content">
           {loading && <Spinner />}
@@ -80,6 +130,15 @@ export default function App() {
           {!loading && !error && renderPage()}
         </div>
       </div>
+      <div style={styles.contentWrap}>
+        <ExportOverlay status={exportStatus} />
+      </div>
     </div>
   );
+}
+
+const styles = {
+  contentWrap: {
+    padding: "0 28px 48px",
+  }
 }

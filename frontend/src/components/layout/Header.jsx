@@ -1,7 +1,17 @@
 import { useEffect, useState } from "react";
-
+import { usePDFExport } from "../../utils/exportPDFf";
+import { jsPDF } from 'jspdf';
+import domtoimage from 'dom-to-image';
+import html2canvas from 'html2canvas';
+import Overview from "../../pages/Overview";
+import Exposure from "../../pages/Exposure";
+import Loans from "../../pages/Loans";
+import Rates from "../../pages/Rates";
+import Borrowers from "../../pages/Borrowers";
+import Transactions from "../../pages/Transactions";
 function LiveClock() {
   const [time, setTime] = useState("");
+
 
   useEffect(() => {
     const updateTime = () => {
@@ -31,8 +41,116 @@ function LiveClock() {
   );
 }
 
+export default function Header({
+  title,
+  subtitle,
+  activePage,
+  setActivePage,
+  darkMode,
+  onToggleDark,
+  setIsExportingFull,
+  setExportStatus
+}) {
 
-export default function Header({ title, subtitle, darkMode, onToggleDark }) {
+const PAGE_TITLES = {
+  overview: "Overview",
+  exposure: "Exposure Analysis",
+  loans: "Loan Portfolio",
+  rates: "Interest & Rates",
+  borrowers: "Borrower View",
+  transactions: "Transactions",
+};
+const PAGE_MAP = {
+  overview: true,
+  exposure: true,
+  loans: true,
+  rates: true,
+  borrowers: true,
+  transactions: true
+};
+ const handleExport = async () => {
+    setIsExportingFull(true);
+    setExportStatus('Preparing full report…');
+
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+    });
+
+    const pagesToExport = Object.keys(PAGE_MAP);
+    const originalActivePage = activePage;
+
+    try {
+      for (let i = 0; i < pagesToExport.length; i++) {
+        const pageKey = pagesToExport[i];
+        const pageTitle = PAGE_TITLES[pageKey] || pageKey;
+
+        setExportStatus(`Capturing ${pageTitle} (${i + 1}/${pagesToExport.length})…`);
+        setActivePage(pageKey);
+         await new Promise(r => setTimeout(r, 2200));
+
+        const fullPageEl = document.querySelector('.wrapper');
+        if (!fullPageEl) continue;
+
+        let dataUrl;
+        try {
+          dataUrl = await domtoimage.toPng(fullPageEl, {
+            width: fullPageEl.scrollWidth * 2,
+            height: fullPageEl.scrollHeight * 2,
+            style: {
+              transform: 'scale(2)',
+              transformOrigin: 'top left',
+              width: fullPageEl.scrollWidth + 'px',
+              height: fullPageEl.scrollHeight + 'px',
+              background: '#ffffff',
+            },
+            filter: (node) => {
+              if (node.id === 'export-overlay' || node.id === 'chart-tooltip' || node.getAttribute?.('data-pdf-exclude') === 'true') {
+                return false;
+              }
+              return true;
+            },
+          });
+        } catch (err) {
+          console.error(`Capture failed for ${pageKey}`, err);
+          continue;
+        }
+
+        if (i > 0) pdf.addPage();
+
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+
+        const img = new Image();
+        img.src = dataUrl;
+
+        await new Promise((res) => (img.onload = res));
+
+        const imgRatio = img.width / img.height;
+        const pageRatio = pageWidth / pageHeight;
+
+        const finalWidth = pageWidth;
+        const finalHeight = (img.height * pageWidth) / img.width;
+
+
+        pdf.addImage(dataUrl, 'PNG', 0, 0, finalWidth, finalHeight);
+      }
+
+      const timestamp = new Date().toISOString().slice(0, 16).replace('T', '_').replace(/:/g, '');
+      pdf.save(`tfsin-hana-full-report_${timestamp}.pdf`);
+
+    } catch (err) {
+      console.error('Export failed:', err);
+      alert('Export failed. Check console (F12).');
+    } finally {
+      setActivePage(originalActivePage);
+      setIsExportingFull(false);
+      setExportStatus('');
+    }
+  };
+
+
   return (
     <div className="header-bar">
       <div className="header-text">
@@ -48,7 +166,7 @@ export default function Header({ title, subtitle, darkMode, onToggleDark }) {
 
         <button
           className="pdf-btn"
-          // onClick={exportPDF}
+          onClick={handleExport}
           style={{ padding: "6px 12px", fontSize: ".72rem" }}
         >
           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" /><path d="M14 2v6h6" /></svg>
