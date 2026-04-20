@@ -150,7 +150,6 @@ const totalPages = Math.ceil(borrowersTable.length / PER_PAGE);
             dataKey="value"
             nameKey="name"
             color="url(#intGrad)"
-            formatter={(v) => `₹${v}Bn`}
           />
         </div>
 
@@ -171,7 +170,6 @@ const totalPages = Math.ceil(borrowersTable.length / PER_PAGE);
             dataKey="value"
             nameKey="name"
             color="url(#intGrad)"
-            formatter={(v) => `₹${v}Bn`}
           />
         </div>
       </div>

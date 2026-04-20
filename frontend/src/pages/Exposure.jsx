@@ -248,7 +248,7 @@ const totalPagesLocal = Math.ceil(filteredRows.length / PAGE_SIZE);  return (
       <div className="two-col">
         <div className="chart-card">
           <div className="chart-title">Outstanding Amount by Group</div>
-          <div className="chart-subtitle">HORIZONTAL BAR · ₹ BN</div>
+          <div className="chart-subtitle">HORIZONTAL BAR · ₹ Cr</div>
           <TopNSelector
             options={TOP_N_OPTIONS}
             value={topN.hbar}
@@ -260,7 +260,7 @@ const totalPagesLocal = Math.ceil(filteredRows.length / PAGE_SIZE);  return (
             nameKey="name"
             height={320}
             barSize={18}
-            formatter={(v) => `₹${(v / 1e7).toFixed(0)} Cr`}
+            formatter={(v) => `₹${Number(v).toLocaleString("en-IN")} Cr`}
           />
         </div>
         <div className="chart-card">
@@ -275,20 +275,21 @@ const totalPagesLocal = Math.ceil(filteredRows.length / PAGE_SIZE);  return (
               {
                 key: "Sanction",
                 label: "Sanction",
-                gradient: "blueGrad", // ✅ same as other charts
+                gradient: "blueGrad", //  same as other charts
               },
               {
                 key: "Loan Amt",
                 label: "Loan Amt",
-                color: "rgba(123, 214, 226, 1)", // ✅ your color
+                color: "rgba(123, 214, 226, 1)", // your color
               },
               {
                 key: "Outstanding",
                 label: "Outstanding",
-                color: "rgba(252, 218, 172, 1)", // ✅ your color
+                color: "rgba(252, 218, 172, 1)", //  your color
               },
             ]}
             height={280}
+            formatter={(v) => `₹${Number(v).toLocaleString("en-IN")} Cr`}
           />
         </div>
       </div>
@@ -296,7 +297,7 @@ const totalPagesLocal = Math.ceil(filteredRows.length / PAGE_SIZE);  return (
       <div className="two-col">
         <div className="chart-card">
           <div className="chart-title">Interest Received by Group</div>
-          <div className="chart-subtitle">₹ MILLIONS</div>
+          <div className="chart-subtitle">₹ Cr</div>
           <TopNSelector
             options={TOP_N_OPTIONS}
             value={topN.intBar}
@@ -309,7 +310,6 @@ const totalPagesLocal = Math.ceil(filteredRows.length / PAGE_SIZE);  return (
             color="url(#intGrad)"
             height={260}
             barSize={30}
-            formatter={(v) => `₹${v}Mn`}
           />
         </div>
         <div className="chart-card">

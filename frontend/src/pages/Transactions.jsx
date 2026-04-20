@@ -1,4 +1,4 @@
-import React, { useState, useMemo  } from "react";
+import React, { useState, useMemo } from "react";
 import {
   VerticalBar,
   VerticalBarWithLineTransactions,
@@ -11,11 +11,10 @@ import { fmt } from "../utils/formatters";
 import { TOP_N_OPTIONS } from "../utils/constants";
 
 export default function Transactions({ data }) {
-
   const [search, setSearch] = useState("");
-const [product, setProduct] = useState("");
-const [rate, setRate] = useState("");
-const [tenor, setTenor] = useState("");
+  const [product, setProduct] = useState("");
+  const [rate, setRate] = useState("");
+  const [tenor, setTenor] = useState("");
 
   const txn = data?.transactions || {};
   const customer = data?.overview?.kpi || {};
@@ -34,13 +33,13 @@ const [tenor, setTenor] = useState("");
   const currentFY = kpis?.Current_FY_Disb?.title || 0;
 
   const RATE_COLORS = [
-    '#1565c0',
-    '#1e88e5',
-    '#42a5f5',
-    '#90caf9',
-    '#fb8c00',
-    '#e65100',
-    '#c62828'
+    "#1565c0",
+    "#1e88e5",
+    "#42a5f5",
+    "#90caf9",
+    "#fb8c00",
+    "#e65100",
+    "#c62828",
   ];
 
   // Loan Size
@@ -129,13 +128,10 @@ const [tenor, setTenor] = useState("");
 
         const cleaned = String(v).replace(/^0+/, "") || "0";
 
-        return (
-          <span style={{ fontWeight: 700 }}>
-            {cleaned}
-          </span>
-        );
+        return <span style={{ fontWeight: 700 }}>{cleaned}</span>;
       },
-    }, { key: "customer", label: "Customer" },
+    },
+    { key: "customer", label: "Customer" },
     { key: "group", label: "Group" },
     {
       key: "product",
@@ -224,14 +220,14 @@ const [tenor, setTenor] = useState("");
 
         const rate = Number(v);
 
-        let bg = "#E3F2FD";   // default (blue-ish)
+        let bg = "#E3F2FD"; // default (blue-ish)
         let text = "#1E88E5";
 
         if (rate < 8) {
-          bg = "#E8F5E9";    // light green
+          bg = "#E8F5E9"; // light green
           text = "#43A047";
         } else if (rate > 9) {
-          bg = "#FFF3E0";    // light orange
+          bg = "#FFF3E0"; // light orange
           text = "#FB8C00";
         }
 
@@ -299,85 +295,124 @@ const [tenor, setTenor] = useState("");
           </span>
         );
       },
-    }
+    },
   ];
 
-    const filteredRows = useMemo(() => {
-  return txnTable.filter((row) => {
-    const matchSearch =
-      !search ||
-      row.proposal_id?.toString().includes(search) ||
-      row.customer?.toLowerCase().includes(search.toLowerCase()) ||
-      row.group?.toLowerCase().includes(search.toLowerCase());
-    const matchProduct =
-      !product || row.product?.toUpperCase().includes(product);
+  const filteredRows = useMemo(() => {
+    return txnTable.filter((row) => {
+      const matchSearch =
+        !search ||
+        row.proposal_id?.toString().includes(search) ||
+        row.customer?.toLowerCase().includes(search.toLowerCase()) ||
+        row.group?.toLowerCase().includes(search.toLowerCase());
+      const matchProduct =
+        !product || row.product?.toUpperCase().includes(product);
 
-    const r = Number(row.rate || 0);
-    const matchRate =
-      !rate ||
-      (rate === "low" && r < 8) ||
-      (rate === "mid" && r >= 8 && r <= 9) ||
-      (rate === "high" && r > 9);
+      const r = Number(row.rate || 0);
+      const matchRate =
+        !rate ||
+        (rate === "low" && r < 8) ||
+        (rate === "mid" && r >= 8 && r <= 9) ||
+        (rate === "high" && r > 9);
 
-    let matchTenor = true;
-    if (tenor) {
-      const start = new Date(row.start_date);
-      const end = new Date(row.end_date);
-      const years = (end - start) / (1000 * 60 * 60 * 24 * 365);
+      let matchTenor = true;
+      if (tenor) {
+        const start = new Date(row.start_date);
+        const end = new Date(row.end_date);
+        const years = (end - start) / (1000 * 60 * 60 * 24 * 365);
 
-      matchTenor =
-        (tenor === "short" && years < 10) ||
-        (tenor === "medium" && years >= 10 && years <= 15) ||
-        (tenor === "long" && years > 15);
-    }
+        matchTenor =
+          (tenor === "short" && years < 10) ||
+          (tenor === "medium" && years >= 10 && years <= 15) ||
+          (tenor === "long" && years > 15);
+      }
 
-    return matchSearch && matchProduct && matchRate && matchTenor;
-  });
-}, [txnTable, search, product, rate, tenor]);
+      return matchSearch && matchProduct && matchRate && matchTenor;
+    });
+  }, [txnTable, search, product, rate, tenor]);
 
-const paginatedRows = filteredRows.slice(
-  (page - 1) * PAGE_SIZE,
-  page * PAGE_SIZE
-);
+  const paginatedRows = filteredRows.slice(
+    (page - 1) * PAGE_SIZE,
+    page * PAGE_SIZE,
+  );
 
-const totalPages = Math.ceil(filteredRows.length / PAGE_SIZE);
+  const totalPages = Math.ceil(filteredRows.length / PAGE_SIZE);
 
+  const totalTxnSub =
+    kpis?.Total_Transactions?.subtitle?.join?.(" ") ||
+    kpis?.Total_Transactions?.subtitle ||
+    "";
 
+  const avgSanctionSub = kpis?.Average_Sanction?.subtitle || "";
+
+  const principalSub = kpis?.Principal_Recieved?.subtitle || "";
+
+  const currentFYSub = kpis?.Current_FY_Disb?.subtitle || "";
 
   return (
     <div>
       <div className="section-label">Transaction Analytics</div>
 
       <div className="four-col">
-        <KpiCard label="Total Transactions" value={totalTxn} iconName="document"
+        <KpiCard
+          label="Total Transactions"
+          value={totalTxn}
+          sub={totalTxnSub} // ✅ added
+          sparkPct={100}
+          footer={kpis?.Total_Transactions?.footer}
+          iconName="document"
+          accent="c1"
           badge={{
             label: "Volume",
             bgColor: "#E8F1FF",
             textColor: "#1D4ED8",
-          }} />
-        <KpiCard label="Avg Sanction" value={`${fmt.mn(avgSanction)}`} iconName="dollar"
+          }}
+        />
+
+        <KpiCard
+          label="Avg Sanction"
+          value={`${fmt.mn(avgSanction)}`}
+          sub={avgSanctionSub}
+          footer={kpis?.Average_Sanction?.footer}
+          iconName="dollar"
+          sparkPct={80}
+          accent="c2"
           badge={{
             label: "Avg Size",
             bgColor: "#E0F7FA",
-            textColor: "#43A047",
-          }} />
+            textColor: "#00ACC1",
+          }}
+        />
+
         <KpiCard
           label="Principal Received"
           value={`${fmt.bn(principalRecv)}`}
+          sub={principalSub}
+          footer={kpis?.Principal_Recieved?.footer}
           iconName="storage"
+          sparkPct={60}
+          accent="c3"
           badge={{
-            label: "Recipts",
+            label: "Receipts",
+            bgColor: "#E8F5E9",
+            textColor: "#43A047",
+          }}
+        />
+
+        <KpiCard
+          label="Current FY Disb"
+          value={currentFY}
+          sub={currentFYSub}
+          footer={kpis?.Current_FY_Disb?.footer}
+          iconName="graph"
+          sparkPct={30}
+          accent="c4"
+          badge={{
+            label: "Pipeline",
             bgColor: "#FFF3E0",
             textColor: "#FB8C00",
           }}
-
         />
-        <KpiCard label="Current FY Disb" value={currentFY} iconName="graph"
-          badge={{
-            label: "PIPELINE",
-            bgColor: "#F3E5F5",
-            textColor: "#7B1FA2",
-          }} />
       </div>
 
       <div className="two-col">
@@ -397,6 +432,7 @@ const totalPages = Math.ceil(filteredRows.length / PAGE_SIZE);
             dataKey="count"
             nameKey="label"
             height={400}
+            formatter={(v) => `₹${Number(v).toLocaleString("en-IN")} Cr`}
           />
         </div>
       </div>
@@ -405,7 +441,7 @@ const totalPages = Math.ceil(filteredRows.length / PAGE_SIZE);
         <div className="chart-card">
           <div className="chart-title">Quarterly Sanction Volume</div>
           <div className="chart-subtitle">SANCTION ₹ BN — ALL QUARTERS</div>
-          <VerticalBar data={quarterlyData} dataKey="value" nameKey="quarter" />
+          <VerticalBar data={quarterlyData} dataKey="value" nameKey="quarter" formatter={(v) => `₹${Number(v).toLocaleString("en-IN")} Cr`} />
         </div>
 
         <div className="chart-card">
@@ -467,6 +503,7 @@ const totalPages = Math.ceil(filteredRows.length / PAGE_SIZE);
             data={topGroupsSanction}
             dataKey="value"
             nameKey="label"
+            formatter={(v) => `₹${Number(v).toLocaleString("en-IN")} Cr`}
           />
         </div>
 
@@ -484,6 +521,7 @@ const totalPages = Math.ceil(filteredRows.length / PAGE_SIZE);
             data={topGroupsPrincipal}
             dataKey="value"
             nameKey="label"
+            formatter={(v) => `₹${Number(v).toLocaleString("en-IN")} Cr`}
           />
         </div>
       </div>
@@ -534,95 +572,94 @@ const totalPages = Math.ceil(filteredRows.length / PAGE_SIZE);
         </div>
       </div>
 
-
-
       <div className="card">
-        <div class="card-title">All Disbursements <span class="card-badge" id="txnBadge"></span></div>
-        <div class="cio-note">
-          Searchable register of all {totalTxn} disbursement transactions across {totalCust}. Filter by product, rate band, or tenor.
+        <div class="card-title">
+          All Disbursements <span className="card-badge" id="txnBadge"></span>
         </div>
-<div className="txn-toolbar">
-  <input
-    className="txn-search"
-    placeholder="Search Proposal, Customer, Group..."
-    value={search}
-    onChange={(e) => {
-      setSearch(e.target.value);
-      setPage(1); // reset page
-    }}
-  />
+        <div className="cio-note">
+          Searchable register of all {totalTxn} disbursement transactions across{" "}
+          {totalCust}. Filter by product, rate band, or tenor.
+        </div>
+        <div className="txn-toolbar">
+          <input
+            className="txn-search"
+            placeholder="Search Proposal, Customer, Group..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1); // reset page
+            }}
+          />
 
-  <select
-    className="txn-select"
-    value={product}
-    onChange={(e) => {
-      setProduct(e.target.value);
-      setPage(1);
-    }}
-  >
-    <option value="">All Products</option>
-    <option value="TL">TL</option>
-    <option value="DEB">DEB</option>
-  </select>
+          <select
+            className="txn-select"
+            value={product}
+            onChange={(e) => {
+              setProduct(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="">All Products</option>
+            <option value="TL">TL</option>
+            <option value="DEB">DEB</option>
+          </select>
 
-  <select
-    className="txn-select"
-    value={rate}
-    onChange={(e) => {
-      setRate(e.target.value);
-      setPage(1);
-    }}
-  >
-    <option value="">All Rates</option>
-    <option value="low">Rate &lt; 8%</option>
-    <option value="mid">Rate 8–9%</option>
-    <option value="high">Rate &gt; 9%</option>
-  </select>
+          <select
+            className="txn-select"
+            value={rate}
+            onChange={(e) => {
+              setRate(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="">All Rates</option>
+            <option value="low">Rate &lt; 8%</option>
+            <option value="mid">Rate 8–9%</option>
+            <option value="high">Rate &gt; 9%</option>
+          </select>
 
-  <select
-    className="txn-select"
-    value={tenor}
-    onChange={(e) => {
-      setTenor(e.target.value);
-      setPage(1);
-    }}
-  >
-    <option value="">All Tenors</option>
-    <option value="short">&lt; 10 yrs</option>
-    <option value="medium">10–15 yrs</option>
-    <option value="long">&gt; 15 yrs</option>
-  </select>
+          <select
+            className="txn-select"
+            value={tenor}
+            onChange={(e) => {
+              setTenor(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="">All Tenors</option>
+            <option value="short">&lt; 10 yrs</option>
+            <option value="medium">10–15 yrs</option>
+            <option value="long">&gt; 15 yrs</option>
+          </select>
 
-  <button
-    className="txn-clear"
-    onClick={() => {
-      setSearch("");
-      setProduct("");
-      setRate("");
-      setTenor("");
-      setPage(1);
-    }}
-  >
-    Clear
-  </button>
+          <button
+            className="txn-clear"
+            onClick={() => {
+              setSearch("");
+              setProduct("");
+              setRate("");
+              setTenor("");
+              setPage(1);
+            }}
+          >
+            Clear
+          </button>
 
-  <span className="txn-count">
-    {filteredRows.length} records
-  </span>
-</div>
+          <span className="txn-count">{filteredRows.length} records</span>
+        </div>
 
-<DataTable
-  columns={TXN_COLUMNS}
-  rows={paginatedRows}
-  total={filteredRows.length}
-  page={page}
-  totalPages={totalPages}
-  onPage={setPage}
-  sortBy={null}
-  sortDir={null}
-  onSort={() => {}}
-  loading={false}
-/>
+        <DataTable
+          columns={TXN_COLUMNS}
+          rows={paginatedRows}
+          total={filteredRows.length}
+          page={page}
+          totalPages={totalPages}
+          onPage={setPage}
+          sortBy={null}
+          sortDir={null}
+          onSort={() => {}}
+          loading={false}
+        />
       </div>
     </div>
   );
