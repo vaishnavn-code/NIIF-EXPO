@@ -138,7 +138,7 @@ const PAGE_MAP = {
       }
 
       const timestamp = new Date().toISOString().slice(0, 16).replace('T', '_').replace(/:/g, '');
-      pdf.save(`tfsin-hana-full-report_${timestamp}.pdf`);
+      pdf.save(`niif-exposure-full-report_${timestamp}.pdf`);
 
     } catch (err) {
       console.error('Export failed:', err);

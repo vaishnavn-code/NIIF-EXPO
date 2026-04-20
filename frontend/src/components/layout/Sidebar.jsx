@@ -30,7 +30,7 @@ export default function Sidebar({ activePage, onNavigate }) {
   return (
     <aside style={styles.sidebar}>
       <div style={styles.logoWrap}>
-        <img src={FSlogo} alt="TFSIN Logo" style={{ width: 40, height: 40, borderRadius: 9 }} />
+        <img src={FSlogo} alt="FS Logo" style={{ width: 40, height: 40, borderRadius: 9 }} />
         <div>
           <div style={styles.logoText}>EXPOSURE DASHBOARD</div>
           <div style={styles.logoSub}>A Product by Fourth Signal</div>

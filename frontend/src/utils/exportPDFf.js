@@ -96,7 +96,7 @@ function addMultiPageImage(pdf, canvas, margin = 10) {
 
 export async function exportPDF({
   element,
-  filename = 'tfsin-hana-full-report.pdf',
+  filename = 'niif-exposure-full-report.pdf',
   format = 'a3',
   orientation = 'landscape',
   scale = 3,

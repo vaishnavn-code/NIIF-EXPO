@@ -130,15 +130,8 @@ export default function App() {
           {!loading && !error && renderPage()}
         </div>
       </div>
-      <div style={styles.contentWrap}>
+      
         <ExportOverlay status={exportStatus} />
-      </div>
     </div>
   );
-}
-
-const styles = {
-  contentWrap: {
-    padding: "0 28px 48px",
-  }
 }
