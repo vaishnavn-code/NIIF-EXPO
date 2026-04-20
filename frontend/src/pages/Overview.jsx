@@ -137,20 +137,6 @@ export default function Overview({ data }) {
       .slice(0, 10); // ✅ top 10
   }, [data]);
 
-  const availableYears = useMemo(() => {
-    const chart = data?.overview?.charts?.["Disbursements Activity"];
-
-    if (!chart?.values) return [];
-
-    return [
-      ...new Set(
-        Object.values(chart.values)
-          .map((val) => String(val?.Year || ""))
-          .filter(Boolean),
-      ),
-    ].sort((a, b) => Number(b) - Number(a));
-  }, [data]);
-
   const disbursementData = useMemo(() => {
     const chart = data?.overview?.charts?.["Disbursements Activity"];
 
@@ -324,6 +310,7 @@ export default function Overview({ data }) {
             label: "Sanctioned",
             bgColor: "#E8F1FF",
             textColor: "#1D4ED8",
+            dotColor: "#1D4ED8", // 👈 key line for badge dot
           }}
         />
 
@@ -350,8 +337,9 @@ export default function Overview({ data }) {
           iconName="graph"
           badge={{
             label: "Outstanding",
-            bgColor: "#F3E5F5",
+            bgColor: "#E8F5E9",
             textColor: "#43A047",
+            dotColor: "#43A047", // 👈 key line for badge dot
           }}
         />
 
@@ -364,9 +352,9 @@ export default function Overview({ data }) {
           accent="c3"
           iconName="trending"
           badge={{
-            label: "Outstanding",
-            bgColor: "#E8F5E9",
-            textColor: "#43A047",
+            label: "Exposure",
+            bgColor: "#FFF3E0",
+            textColor: "#FB8C00",
           }}
         />
 
