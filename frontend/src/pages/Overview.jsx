@@ -106,19 +106,19 @@ export default function Overview({ data }) {
   }, [data]);
 
   const topGroupsOutstanding = useMemo(() => {
-    const groupChart =
-      data?.overview?.charts?.["Group by Outstanding & Sanction"];
+  const groupChart =
+    data?.overview?.charts?.["Group by Outstanding & Sanction"];
 
-    if (!groupChart) return [];
+  if (!groupChart) return [];
 
-    return groupChart.values
-      .map((item) => ({
-        label: item.bp_group,
-        count: parseFloat(item.outstanding || 0),
-      }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, topN);
-  }, [data, topN]);
+  return groupChart.values
+    .map((item) => ({
+      label: item.bp_group,
+      count: +(item.outstanding / 1e7).toFixed(2), // ✅ convert to Cr
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, topN);
+}, [data, topN]);
 
   const topGroupsDual = useMemo(() => {
     const groupChart =
@@ -678,6 +678,8 @@ export default function Overview({ data }) {
             nameKey="label"
             height={260}
             barSize={20}
+            slantLabels={true}
+            formatter={(v) => `₹${v.toLocaleString("en-IN")} Cr`}
           />
         </div>
         <div className="chart-card">
@@ -705,7 +707,6 @@ export default function Overview({ data }) {
             dataKey="count"
             nameKey="label"
             height={220}
-            formatter={(v) => `₹${Number(v).toLocaleString("en-IN")} Cr`}
           />
         </div>
         <div className="chart-card">
@@ -716,7 +717,6 @@ export default function Overview({ data }) {
             dataKey="count"
             nameKey="label"
             height={220}
-            formatter={(v) => `₹${Number(v).toLocaleString("en-IN")} Cr`}
           />
         </div>
       </div>
@@ -742,7 +742,7 @@ export default function Overview({ data }) {
               },
             ]}
             height={280}
-            formatter={(v) => `₹${Number(v).toLocaleString("en-IN")} Cr`}
+            formatter={(v) => `₹${(v / 1e7).toLocaleString("en-IN")} Cr`}
           />
         </div>
         <div className="chart-card">
@@ -752,7 +752,7 @@ export default function Overview({ data }) {
             data={collectionDonut}
             colors={["#1565c0", "#00acc1", "#90caf9"]}
             height={220}
-            formatter={(v) => `₹${Number(v).toLocaleString("en-IN")} Cr`}
+            formatter={(v) => `₹${(v / 1e7).toLocaleString("en-IN")} Cr`}
           />
           <DonutLegend
             data={collectionDonut}

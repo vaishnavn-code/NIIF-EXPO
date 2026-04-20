@@ -150,6 +150,8 @@ const totalPages = Math.ceil(borrowersTable.length / PER_PAGE);
             dataKey="value"
             nameKey="name"
             color="url(#intGrad)"
+            slantLabels={true}
+            formatter={(v) => `₹${(v / 1e7).toLocaleString("en-IN")} Cr`} 
           />
         </div>
 
@@ -170,6 +172,8 @@ const totalPages = Math.ceil(borrowersTable.length / PER_PAGE);
             dataKey="value"
             nameKey="name"
             color="url(#intGrad)"
+            slantLabels={true}
+            formatter={(v) => `₹${(v / 1e7).toLocaleString("en-IN")} Cr`} 
           />
         </div>
       </div>

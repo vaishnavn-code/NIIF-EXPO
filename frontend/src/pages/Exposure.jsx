@@ -260,7 +260,7 @@ const totalPagesLocal = Math.ceil(filteredRows.length / PAGE_SIZE);  return (
             nameKey="name"
             height={320}
             barSize={18}
-            formatter={(v) => `₹${Number(v).toLocaleString("en-IN")} Cr`}
+            formatter={(v) => `₹${(v / 1e7).toLocaleString("en-IN")} Cr`}
           />
         </div>
         <div className="chart-card">
@@ -289,7 +289,7 @@ const totalPagesLocal = Math.ceil(filteredRows.length / PAGE_SIZE);  return (
               },
             ]}
             height={280}
-            formatter={(v) => `₹${Number(v).toLocaleString("en-IN")} Cr`}
+            formatter={(v) => `₹${(v / 1e7).toLocaleString("en-IN")} Cr`}
           />
         </div>
       </div>
@@ -310,6 +310,8 @@ const totalPagesLocal = Math.ceil(filteredRows.length / PAGE_SIZE);  return (
             color="url(#intGrad)"
             height={260}
             barSize={30}
+            slantLabels={true}
+            formatter={(v) => `₹${(v / 1e7).toLocaleString("en-IN")} Cr`}
           />
         </div>
         <div className="chart-card">
@@ -328,6 +330,7 @@ const totalPagesLocal = Math.ceil(filteredRows.length / PAGE_SIZE);  return (
             height={260}
             barSize={30}
             unit="%"
+            slantLabels={true}
             formatter={(v) => `${v}%`}
           />
         </div>

@@ -90,7 +90,7 @@ const styles = {
     borderBottom: '1px solid var(--border)',
     marginBottom: 12
   },
-  logoText: { fontSize: '0.68rem', fontWeight: 700, color: 'var(--blue-dark)' },
+  logoText: { fontSize: '1rem', fontWeight: 700, color: 'var(--blue-dark)' },
   logoSub: {
     fontSize: '.40rem',
     fontWeight: 600,

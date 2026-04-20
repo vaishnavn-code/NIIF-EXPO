@@ -28,6 +28,7 @@ export function VerticalBar({
   unit = "",
   formatter,
   barSize = 32,
+  slantLabels = false,
 }) {
   return (
     <ResponsiveContainer width="100%" height={height}>
@@ -46,22 +47,36 @@ export function VerticalBar({
           tick={({ x, y, payload }) => {
             let value = payload.value || "";
 
-            // ✅ KEEP THIS (your requirement)
             value = value.replace("Years", "Y");
 
-            // ✅ Handle long names safely
             const displayValue =
               value.length > 20 ? value.slice(0, 20) + "..." : value;
 
+            if (slantLabels) {
+              return (
+                <text
+                  x={x}
+                  y={y + 10}
+                  textAnchor="end"
+                  fill="var(--text-muted)"
+                  fontSize={10}
+                  fontFamily="Inter"
+                  transform={`rotate(-35, ${x}, ${y})`}
+                >
+                  {displayValue}
+                </text>
+              );
+            }
+
+            // ✅ STRAIGHT LABEL
             return (
               <text
                 x={x}
                 y={y + 10}
-                textAnchor="end"
+                textAnchor="middle"
                 fill="var(--text-muted)"
                 fontSize={10}
                 fontFamily="Inter"
-                transform={`rotate(-35, ${x}, ${y})`} // 👈 slant
               >
                 {displayValue}
               </text>
@@ -76,13 +91,28 @@ export function VerticalBar({
           }}
           tickLine={false}
           axisLine={false}
-          tickFormatter={(v) => (formatter ? formatter(v) : fmt.cr(v))}
+          tickFormatter={(v) =>
+            formatter
+              ? formatter(v).replace("₹", "").replace(" Cr", "") // remove symbols for axis
+              : Number(v).toLocaleString("en-IN")
+          } // ✅ KEY FIX
+          label={{
+            value: "In ₹ Crs",
+            angle: -90,
+            position: "insideLeft",
+            style: {
+              fontSize: 10,
+              fill: "var(--text-muted)",
+            },
+          }}
         />
         <Tooltip
-        cursor={{ fill: "transparent" }}
+          cursor={{ fill: "transparent" }}
           content={buildUnifiedTooltip({
             valueFormatter: (value) =>
-              `₹${Number(value).toLocaleString("en-IN")} Cr`,
+              formatter
+                ? formatter(value) // ✅ use custom formatter if passed
+                : Number(value).toLocaleString("en-IN"), // ✅ default = plain number
           })}
         />
         <defs>
@@ -285,11 +315,21 @@ export function GroupedBar({
           }}
           tickLine={false}
           axisLine={false}
-          tickFormatter={(v) => fmt.cr(v)}
+          tickFormatter={(v) => (v / 1e7).toFixed(0)}
           padding={{ top: 1 }}
+          label={{
+            value: "In ₹ Crs",
+            angle: -90,
+            position: "insideLeft",
+            dx: -5,
+            style: {
+              fontSize: 10,
+              fill: "var(--text-muted)",
+            },
+          }}
         />
         <Tooltip
-          cursor={{ fill: "transparent" }} // ✅ ADD THIS
+          cursor={{ fill: "transparent" }}
           content={buildUnifiedTooltip({
             valueFormatter: (value) =>
               formatter ? formatter(value) : `${value}${unit}`,
@@ -400,17 +440,17 @@ export function VerticalBarWithLineOverview({ data, height = 320, viewMode }) {
         />
         <YAxis
           yAxisId="left"
-          tick={{ fontSize: 10, fill: "#00acc1" }}
+          tick={{ fontSize: 10, fill: "#6a9cbf" }}
           axisLine={false}
           tickLine={false}
-          tickFormatter={(v) => fmt.cr(v)}
+          tickFormatter={(v) => (v / 10000000).toFixed(2)}
           label={{
             value: "Sanction / Outstanding (₹ Cr)",
             angle: -90,
             dx: -9,
             dy: 35,
             position: "insideLeft",
-            style: { fontSize: 9, fill: "#00acc1" },
+            style: { fontSize: 9, fill: "#6a9cbf" },
           }}
         />
 

@@ -540,6 +540,7 @@ export default function Transactions({ data }) {
             dataKey="value"
             nameKey="label"
             formatter={(v) => `₹${Number(v).toLocaleString("en-IN")} Cr`}
+            slantLabels={true}
           />
         </div>
 
@@ -557,6 +558,7 @@ export default function Transactions({ data }) {
             data={topGroupsPrincipal}
             dataKey="value"
             nameKey="label"
+            slantLabels ={true}
             formatter={(v) => `₹${Number(v).toLocaleString("en-IN")} Cr`}
           />
         </div>
