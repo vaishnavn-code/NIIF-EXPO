@@ -708,6 +708,8 @@ export default function Overview({ data }) {
             data={productDonut}
             colors={["#1565c0", "#00acc1"]}
             showPercent={true}
+            showValue={true}
+            valueFormatter={(v) => `₹${(v || 0).toFixed(2)} Cr`}
           />
         </div>
       </div>
@@ -765,12 +767,14 @@ export default function Overview({ data }) {
             data={collectionDonut}
             colors={["#1565c0", "#00acc1", "#90caf9"]}
             height={220}
-            formatter={(v) => `₹${(v / 1e7).toLocaleString("en-IN")} Cr`}
+            formatter={(v) => `₹${Math.round((v || 0) / 1e7).toLocaleString("en-IN")} Cr`}
           />
           <DonutLegend
             data={collectionDonut}
             colors={["#1565c0", "#00acc1", "#90caf9"]}
             showPercent={true}
+            showValue={true}
+            valueFormatter={(v) => `₹${Math.round((v || 0) / 1e7).toLocaleString("en-IN")} Cr`}
           />
         </div>
       </div>

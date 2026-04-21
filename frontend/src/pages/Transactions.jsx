@@ -491,34 +491,37 @@ export default function Transactions({ data }) {
               paddingTop: 12,
               display: "grid",
               gridTemplateColumns: "1fr 1fr",
-              gap: "8px 20px",
+              columnGap: 30,
+              rowGap: 8,
+              fontSize: 12,
             }}
           >
-            {rateWithPercent.map((r, i) => (
+            {rateWithPercent.map((item, idx) => (
               <div
-                key={r.name}
+                key={item.name}
                 style={{
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  fontSize: 12,
+                  width: "100%",
                 }}
               >
-                {/* LEFT SIDE */}
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <span
                     style={{
-                      width: 8,
-                      height: 8,
+                      width: 9,
+                      height: 9,
                       borderRadius: "50%",
-                      background: RATE_COLORS[i % RATE_COLORS.length],
+                      background: RATE_COLORS[idx % RATE_COLORS.length],
+                      flexShrink: 0,
                     }}
                   />
-                  <span>{r.name}</span>
-                </div>
-
-                {/* RIGHT SIDE */}
-                <span style={{ fontWeight: 600 }}>{r.percent}%</span>
+                  <span>{item.name}</span>
+                </span>
+                <strong style={{ marginLeft: "auto", textAlign: "right" }}>
+                  {Number(item.value || 0).toLocaleString("en-IN")}
+                  <span style={{ marginLeft: 8 }}>({item.percent}%)</span>
+                </strong>
               </div>
             ))}
           </div>
@@ -602,8 +605,11 @@ export default function Transactions({ data }) {
                 {/* LABEL */}
                 <span>{p.name}</span>
 
-                {/* % VALUE */}
-                <span style={{ fontWeight: 600 }}>{p.percent}%</span>
+                {/* VALUE + % */}
+                <span style={{ fontWeight: 600 }}>
+                  {Number(p.value || 0).toLocaleString("en-IN")}
+                  <span style={{ marginLeft: 8 }}>({p.percent}%)</span>
+                </span>
               </div>
             ))}
           </div>
