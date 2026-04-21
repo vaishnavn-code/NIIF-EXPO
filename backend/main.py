@@ -75,6 +75,10 @@ from datetime import datetime
 SECRET_KEY = os.getenv("SECRET_KEY",    "CHANGE_ME_IN_PRODUCTION")
 SHARED_SECRET = os.getenv("SHARED_SECRET", "CHANGE_ME_IN_PRODUCTION")
 
+# localhost
+# SECRET_KEY = "921a5f127bcce6a6e71a0f0027ae6fbc3614061bf18f9b37ec844ea168542ae6"
+# SHARED_SECRET = "658ebbd2998e6e43dee75b64d23dc3f075a8a1bdfc08fa5fb85eba457e8782b6"
+
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRY_SECONDS = 900000 # 15 minutes
 
@@ -879,19 +883,19 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
         "overview": {
             "kpi": {
                 "Total_Sanction": {
-                    "Title": f"₹{round(total_sanction / 10000000, 2)} Cr",
+                    "Title": f"₹{round(total_sanction / 10000000):,} Cr",
                     "Subtitle": f"{str(len(rows))} loan records · {len(proposal_set)} proposals",
                     "Footer": f"{str(len(bp_summary_map))} Borrower Groups · {len(customer_set)} Customers"
                 },
                 "Outstanding_Amount": {
-                    "Title": f"₹{round(total_os_amt / 10000000, 2)} Cr",
-                    "Subtitle": f"Disbursed: ₹{total_exposure / 10000000:,.2f} Cr  total",
-                    "Footer": f"Principal Received: ₹{total_prin_rec / 10000000:,.2f} Cr"
+                    "Title": f"₹{round(total_os_amt / 10000000):,} Cr",
+                    "Subtitle": f"Disbursed: ₹{total_exposure / 10000000:,.0f} Cr  total",
+                    "Footer": f"Principal Received: ₹{total_prin_rec / 10000000:,.0f} Cr"
                 },
                 "Total_Exposure": {
-                    "Title": f"₹{round(total_exposure / 10000000, 2)} Cr",
-                    "Subtitle": f"Interest Due: ₹{total_int_due/10000000:,.2f} Cr accrued",
-                    "Footer": f"Upcoming Interest: ₹{total_upcoming_int/10000000:,.2f} Cr"
+                    "Title": f"₹{round(total_exposure / 10000000):,} Cr",
+                    "Subtitle": f"Interest Due: ₹{total_int_due/10000000:,.0f} Cr accrued",
+                    "Footer": f"Upcoming Interest: ₹{total_upcoming_int/10000000:,.0f} Cr"
                 },
                "Avg_IntRate": {
                     "Title": f"{avg_interest_rate:.2f} %",
@@ -939,12 +943,12 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
                 "TL_Disbursements": {
                     "Title": str(tl_count),
                     "Subtitle": "TL Disbursements",
-                    "Footer": f"Term Loans · ₹{tl_os_amt / 10000000:,.2f} Cr O/S"
+                    "Footer": f"Term Loans · ₹{tl_os_amt / 10000000:,.0f} Cr O/S"
                 },
                 "DEB_Disbursements": {
                     "Title": str(deb_count),
                     "Subtitle": "DEB Disbursements",
-                    "Footer": f"Debentures · ₹{deb_os_amt / 10000000:,.2f} Bn O/S"
+                    "Footer": f"Debentures · ₹{deb_os_amt / 10000000:,.0f} Bn O/S"
                 }
             },
             "table": exposure_table
@@ -992,13 +996,13 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
 
       },
       "Principal_Recieved": {
-        "title": str(round(total_prin_rec, 2)),
+        "title": f"{total_prin_rec:,.0f}",
         "subtitle": f"{((total_prin_rec / total_sanction) * 100):.2f}% of total sanctioned" if total_sanction else "0.00% of total sanctioned",
         "footer": f"Interest Received: ₹{total_int_rec / 1e9:.2f} Bn"
       },
       "Current_FY_Disb": {
         "title": str(len(fy_2026_disb_set)),
-        "subtitle": f"{total_sanction_2026/1e7:,.2f} Cr sanctioned (2026)",
+        "subtitle": f"{total_sanction_2026/1e7:,.0f} Cr sanctioned (2026)",
         "footer": f"{disb_ratio_2026:.2f}% of total portfolio by count"
       }
     },
