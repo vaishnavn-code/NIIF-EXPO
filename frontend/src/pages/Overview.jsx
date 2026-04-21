@@ -114,7 +114,7 @@ export default function Overview({ data }) {
   return groupChart.values
     .map((item) => ({
       label: item.bp_group,
-      count: +(item.outstanding / 1e7).toFixed(2), // ✅ convert to Cr
+      count: +(item.outstanding / 1e7).toFixed(2), // convert to Cr
     }))
     .sort((a, b) => b.count - a.count)
     .slice(0, topN);
@@ -159,12 +159,22 @@ export default function Overview({ data }) {
         : raw.filter((r) => r.year === selectedYear);
 
     if (mode === "monthly") {
-      return filtered.map((r) => ({
-        name: r.date,
-        loan: r.loan,
-        sanction: r.sanction,
-        outstanding: r.outstanding,
-      }));
+      // Aggregate by YYYY-MM key so all entries within a month are summed
+      const monthMap = {};
+      filtered.forEach((r) => {
+        const monthKey = r.date.slice(0, 7); // "YYYY-MM"
+        if (!monthMap[monthKey]) {
+          monthMap[monthKey] = { name: monthKey, loan: 0, sanction: 0, outstanding: 0 };
+        }
+        monthMap[monthKey].loan += r.loan;
+        monthMap[monthKey].sanction += r.sanction;
+        monthMap[monthKey].outstanding += r.outstanding;
+      });
+
+      return Object.values(monthMap)
+        .sort((a, b) => new Date(b.name) - new Date(a.name))
+        .slice(0, 12)
+        .reverse();
     }
 
     const groupBy = (key) => {
@@ -192,13 +202,16 @@ export default function Overview({ data }) {
     };
 
     if (mode === "quarterly") {
-      const quarterOrder = { Q1: 1, Q2: 2, Q3: 3, Q4: 4 };
+      // quarter key is like "2026 Q1", sort by year then quarter number
+      const parseQuarter = (name) => {
+        const [yr, q] = name.split(" ");
+        return parseInt(yr) * 10 + parseInt(q?.replace("Q", "") || 0);
+      };
 
-      return groupBy("quarter").sort(
-        (a, b) =>
-          (quarterOrder[a.name] || Number.MAX_SAFE_INTEGER) -
-          (quarterOrder[b.name] || Number.MAX_SAFE_INTEGER),
-      );
+      return groupBy("quarter")
+        .sort((a, b) => parseQuarter(b.name) - parseQuarter(a.name))
+        .slice(0, 12)
+        .reverse();
     }
 
     if (mode === "yearly") {
