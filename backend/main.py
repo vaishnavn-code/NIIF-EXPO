@@ -885,13 +885,13 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
                 },
                 "Outstanding_Amount": {
                     "Title": f"₹{round(total_os_amt / 10000000, 2)} Cr",
-                    "Subtitle": f"Disbursed: ₹{round(total_exposure / 10000000, 2)} Cr  total",
-                    "Footer": f"Principal Received: ₹{round(total_prin_rec / 10000000, 2)} Cr"
+                    "Subtitle": f"Disbursed: ₹{total_exposure / 10000000:,.2f} Cr  total",
+                    "Footer": f"Principal Received: ₹{total_prin_rec / 10000000:,.2f} Cr"
                 },
                 "Total_Exposure": {
                     "Title": f"₹{round(total_exposure / 10000000, 2)} Cr",
-                    "Subtitle": f"Interest Due: ₹{round(total_int_due/10000000,2)} Cr accrued",
-                    "Footer": f"Upcoming Interest: ₹{round(total_upcoming_int/10000000,2)} Cr"
+                    "Subtitle": f"Interest Due: ₹{total_int_due/10000000:,.2f} Cr accrued",
+                    "Footer": f"Upcoming Interest: ₹{total_upcoming_int/10000000:,.2f} Cr"
                 },
                "Avg_IntRate": {
                     "Title": f"{avg_interest_rate:.2f} %",
@@ -939,12 +939,12 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
                 "TL_Disbursements": {
                     "Title": str(tl_count),
                     "Subtitle": "TL Disbursements",
-                    "Footer": f"Term Loans · ₹{str(round(tl_os_amt / 10000000, 2))} Cr O/S"
+                    "Footer": f"Term Loans · ₹{tl_os_amt / 10000000:,.2f} Cr O/S"
                 },
                 "DEB_Disbursements": {
                     "Title": str(deb_count),
                     "Subtitle": "DEB Disbursements",
-                    "Footer": f"Debentures · ₹{str(round(deb_os_amt / 10000000, 2))} Bn O/S"
+                    "Footer": f"Debentures · ₹{deb_os_amt / 10000000:,.2f} Bn O/S"
                 }
             },
             "table": exposure_table
