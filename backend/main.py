@@ -314,7 +314,9 @@ def get_token(req: AuthRequest):
         "env":          f"{req.sap_sid.upper()}/{req.sap_client}",
     }
 
-REACT_APP_URL = "http://localhost:5173/"
+# REACT_APP_URL = "http://localhost:5173/"
+REACT_APP_URL = "https://green-hill-0732a7b00.2.azurestaticapps.net"
+
 
 @app.post("/session/create")
 def session_create(

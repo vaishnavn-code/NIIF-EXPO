@@ -2,7 +2,8 @@ import axios from 'axios'
 import dashboardSeed from '../data/dashboardSeed.json'
 
 const api = axios.create({
-  baseURL: 'http://127.0.0.1:8000',
+  baseURL: 'https://sap-cloud-analytics-aah0gbcrf3ckgefc.centralindia-01.azurewebsites.net/',
+  // baseURL: 'http://127.0.0.1:8001',
   timeout: 15000,
   headers: { 'Content-Type': 'application/json' },
 })
@@ -45,7 +46,10 @@ async function getDevToken() {
   const sapUser = 'dev_user'
   const timestamp = Math.floor(Date.now() / 1000)
   const message = `${sapSid}${sapClient}${timestamp}`
-  const sharedSecret = 'CHANGE_ME_IN_PRODUCTION'
+  // const sharedSecret = 'CHANGE_ME_IN_PRODUCTION'
+  const sharedSecret = '658ebbd2998e6e43dee75b64d23dc3f075a8a1bdfc08fa5fb85eba457e8782b6'
+  // const sharedSecret = Environment.GetEnvironmentVariable("sharedSecret")
+  // console.log("Using shared secret:", sharedSecret);
 
   const hmac_sig = await computeHmacSha256(sharedSecret, message)
 
