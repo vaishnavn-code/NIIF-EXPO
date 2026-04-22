@@ -28,48 +28,48 @@ const COLUMNS = [
 
   {
     key: "sanction_amt",
-    label: "Sanction (₹ Mn)",
-    render: (v) => fmt.mn(v),
+    label: "Sanction (₹ Cr)",
+    render: (v) => fmt.cr(v),
   },
 
   {
     key: "loan_amt",
-    label: "Loan Amt (₹ Mn)",
-    render: (v) => fmt.mn(v),
+    label: "Loan Amt (₹ Cr)",
+    render: (v) => fmt.cr(v),
   },
 
   {
     key: "outstanding_amt",
-    label: "Outstanding (₹ Mn)",
+    label: "Outstanding (₹ Cr)",
     render: (v) => (
-      <span style={{ fontWeight: 700, color: "#1565c0" }}>
-        {fmt.mn(v)}
+      <span style={{ fontWeight: 700, color: "#2E6090" }}>
+        {fmt.cr(v)}
       </span>
     ),
   },
 
   {
     key: "exposure_amt",
-    label: "Exposure (₹ Mn)",
-    render: (v) => fmt.mn(v),
+    label: "Exposure (₹ Cr)",
+    render: (v) => fmt.cr(v),
   },
 
   {
-    key: "principle_recv", // ✅ correct key
-    label: "Princ Recv (₹ Mn)",
-    render: (v) => fmt.mn(v),
+    key: "principle_recv", // correct key
+    label: "Princ Recv (₹ Cr)",
+    render: (v) => fmt.cr(v),
   },
 
   {
     key: "int_recv",
-    label: "Int Recv (₹ Mn)",
-    render: (v) => fmt.mn(v),
+    label: "Int Recv (₹ Cr)",
+    render: (v) => fmt.cr(v),
   },
 
   {
     key: "upcoming_int",
-    label: "Upcoming Int (₹ Mn)",
-    render: (v) => fmt.mn(v),
+    label: "Upcoming Int (₹ Cr)",
+    render: (v) => fmt.cr(v),
   },
   {
     key: "avg_rate",
@@ -311,6 +311,7 @@ const totalPagesLocal = Math.ceil(filteredRows.length / PAGE_SIZE);  return (
             height={260}
             barSize={30}
             slantLabels={true}
+            isCurrency={true}
             formatter={(v) => `₹${(v / 1e7).toLocaleString("en-IN")} Cr`}
           />
         </div>

@@ -132,7 +132,11 @@ export default function Transactions({ data }) {
       },
     },
     { key: "customer", label: "Customer" },
-    { key: "group", label: "Group" },
+    {
+      key: "group",
+      label: "Group",
+      render: (v) => <span className="spill grey">{v}</span>,
+    },
     {
       key: "product",
       label: "Product",
@@ -204,7 +208,7 @@ export default function Transactions({ data }) {
       key: "outstanding_amt",
       label: "Outstanding",
       render: (v) => (
-        <span style={{ color: "#1565c0", fontWeight: 700 }}>{fmt.cr(v)}</span>
+        <span style={{ color: "#2E6090", fontWeight: 700 }}>{fmt.cr(v)}</span>
       ),
     },
     {
@@ -561,7 +565,7 @@ export default function Transactions({ data }) {
             data={topGroupsPrincipal}
             dataKey="value"
             nameKey="label"
-            slantLabels ={true}
+            slantLabels={true}
             formatter={(v) => `₹${Number(v).toLocaleString("en-IN")} Cr`}
           />
         </div>
@@ -698,7 +702,7 @@ export default function Transactions({ data }) {
           total={filteredRows.length}
           page={page}
           totalPages={totalPages}
-          onPage={setPage}
+          onPage={(p) => setPage(Number(p))}
           sortBy={null}
           sortDir={null}
           onSort={() => {}}

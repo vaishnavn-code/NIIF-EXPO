@@ -709,7 +709,7 @@ export default function Overview({ data }) {
             colors={["#1565c0", "#00acc1"]}
             showPercent={true}
             showValue={true}
-            valueFormatter={(v) => `₹${(v || 0).toFixed(2)} Cr`}
+            valueFormatter={(v) => `₹${Math.round(v || 0)} Cr`}
           />
         </div>
       </div>

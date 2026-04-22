@@ -160,6 +160,8 @@ export default function Rates({ data }) {
             nameKey="name"
             color="var(--green)"
             barSize={44}
+            noDecimals={true}
+            isCurrency={true}
             formatter={(v) => `₹${(v / 1e7).toLocaleString("en-IN")} Cr`} 
           />
         </div>
@@ -177,6 +179,8 @@ export default function Rates({ data }) {
             nameKey="name"
             color="url(#tenorOrangeGrad)"
             slantLabels={true}
+            noDecimals={true}
+            isCurrency={true}
             formatter={(v) => `₹${(v / 1e7).toLocaleString("en-IN")} Cr`} 
           />
         </div>

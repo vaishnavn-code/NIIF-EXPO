@@ -16,36 +16,36 @@ const COLUMNS = [
 
   {
     key: "sanction_amt",
-    label: "Sanction (₹ Mn)",
-    render: (v) => fmt.mn(v),
+    label: "Sanction (₹ Cr)",
+    render: (v) => fmt.cr(v),
   },
 
   {
     key: "outstanding",
-    label: "Outstanding (₹ Mn)",
+    label: "Outstanding (₹ Cr)",
     render: (v) => (
-      <span style={{ fontWeight: 700, color: "#1565c0" }}>
-        {fmt.mn(v)}
+      <span style={{ fontWeight: 700, color: "#2E6090" }}>
+        {fmt.cr(v)}
       </span>
     ),
   },
 
   {
     key: "exposure",
-    label: "Exposure (₹ Mn)",
-    render: (v) => fmt.mn(v),
+    label: "Exposure (₹ Cr)",
+    render: (v) => fmt.cr(v),
   },
 
   {
     key: "princ_recv",
-    label: "Princ Recv (₹ Mn)",
-    render: (v) => fmt.mn(v),
+    label: "Princ Recv (₹ Cr)",
+    render: (v) => fmt.cr(v),
   },
 
   {
     key: "int_recv",
-    label: "Int Recv (₹ Mn)",
-    render: (v) => fmt.mn(v),
+    label: "Int Recv (₹ Cr)",
+    render: (v) => fmt.cr(v),
   },
 
   {
@@ -151,6 +151,7 @@ const totalPages = Math.ceil(borrowersTable.length / PER_PAGE);
             nameKey="name"
             color="url(#intGrad)"
             slantLabels={true}
+            isCurrency={true}
             formatter={(v) => `₹${(v / 1e7).toLocaleString("en-IN")} Cr`} 
           />
         </div>
@@ -173,6 +174,7 @@ const totalPages = Math.ceil(borrowersTable.length / PER_PAGE);
             nameKey="name"
             color="url(#intGrad)"
             slantLabels={true}
+            isCurrency={true}
             formatter={(v) => `₹${(v / 1e7).toLocaleString("en-IN")} Cr`} 
           />
         </div>
@@ -198,9 +200,9 @@ const totalPages = Math.ceil(borrowersTable.length / PER_PAGE);
           columns={COLUMNS}
           rows={paginatedRows}
           total={borrowersTable.length}
-          page={1}
+          page={page}
           totalPages={totalPages}
-          onPage={(p) => setPage(p)}
+          onPage={(p) => setPage(Number(p))}
           sortBy={null}
           sortDir={null}
           onSort={() => {}}

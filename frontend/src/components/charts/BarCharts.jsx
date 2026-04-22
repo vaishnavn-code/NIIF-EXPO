@@ -29,7 +29,11 @@ export function VerticalBar({
   formatter,
   barSize = 32,
   slantLabels = false,
+  isCurrency = false,
 }) {
+  const maxValue = Math.max(...data.map((d) => d[dataKey] || 0));
+  const step = Math.ceil(maxValue / 4);
+  const ticks = Array.from({ length: 5 }, (_, i) => i * step);
   return (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={data} margin={{ top: 25, right: 8, left: 0, bottom: 80 }}>
@@ -91,13 +95,12 @@ export function VerticalBar({
           }}
           tickLine={false}
           axisLine={false}
+          allowDecimals={false}
           tickFormatter={(v) =>
-            formatter
-              ? formatter(v).replace("₹", "").replace(" Cr", "") // remove symbols for axis
-              : Number(v).toLocaleString("en-IN")
-          } // ✅ KEY FIX
+            isCurrency ? Math.round(v / 1e7) : Math.round(v)
+          }
           label={{
-            value: "In ₹ Crs",
+            value: isCurrency ? "In ₹ Crs" : "",
             angle: -90,
             position: "insideLeft",
             style: {
@@ -443,7 +446,7 @@ export function VerticalBarWithLineOverview({ data, height = 320, viewMode }) {
           tick={{ fontSize: 10, fill: "#6a9cbf" }}
           axisLine={false}
           tickLine={false}
-          tickFormatter={(v) => (v / 10000000).toFixed(2)}
+          tickFormatter={(v) => Math.round(v / 10000000)}
           label={{
             value: "Sanction / Outstanding (₹ Cr)",
             angle: -90,

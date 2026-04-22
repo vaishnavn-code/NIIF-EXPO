@@ -57,23 +57,23 @@ const COLUMNS = [
 
   {
     key: "sanction_amt",
-    label: "Sanction (₹ Mn)",
-    render: (v) => fmt.mn(v),
+    label: "Sanction (₹ Cr)",
+    render: (v) => fmt.cr(v),
   },
 
   // 🔵 Outstanding bold blue
   {
     key: "outstanding_amt",
-    label: "Outstanding (₹ Mn)",
+    label: "Outstanding (₹ Cr)",
     render: (v) => (
-      <span style={{ fontWeight: 700, color: "#1565c0" }}>{fmt.mn(v)}</span>
+      <span style={{ fontWeight: 700, color: "#2E6090" }}>{fmt.cr(v)}</span>
     ),
   },
 
   {
     key: "exposure_amt",
-    label: "Exposure (₹ Mn)",
-    render: (v) => fmt.mn(v),
+    label: "Exposure (₹ Cr)",
+    render: (v) => fmt.cr(v),
   },
 
   // 🟣 Rate badge
@@ -109,14 +109,14 @@ const COLUMNS = [
 
   {
     key: "int_recv",
-    label: "Interest Recv",
-    render: (v) => fmt.mn(v),
+    label: "Interest Recv (₹ Cr)",
+    render: (v) => fmt.cr(v),
   },
 
   {
     key: "upcoming_int",
-    label: "Upcoming Int",
-    render: (v) => fmt.mn(v),
+    label: "Upcoming Int (₹ Cr)",
+    render: (v) => fmt.cr(v),
   },
 
   // 🟢 Asset class badge
@@ -247,7 +247,7 @@ export default function Loans({ data }) {
           total={filteredRows.length}
           page={page}
           totalPages={totalPages}
-          onPage={(p) => setPage(p)}
+          onPage={(p) => setPage(Number(p))}
           sortBy={null}
           sortDir={null}
           onSort={() => { }}
