@@ -314,8 +314,8 @@ def get_token(req: AuthRequest):
         "env":          f"{req.sap_sid.upper()}/{req.sap_client}",
     }
 
-# REACT_APP_URL = "http://localhost:5173/"
-REACT_APP_URL = "https://green-hill-0732a7b00.2.azurestaticapps.net"
+REACT_APP_URL = "http://localhost:5173/"
+# REACT_APP_URL = "https://green-hill-0732a7b00.2.azurestaticapps.net"
 
 
 @app.post("/session/create")
@@ -338,6 +338,8 @@ def session_create(
             session["dashboard"] = req.dashboard
             session["filters"] = req.filters
 
+            session["result"] = calculate_cof_dashboard(req.filters or {}, req.raw_data)
+
             frontend_url = (
                 f"{REACT_APP_URL}"
                 f"?token={token}"
@@ -356,11 +358,13 @@ def session_create(
             }
 
     session_id = str(uuid.uuid4())
+    computed_result = calculate_cof_dashboard(req.filters or {}, req.raw_data)
 
     _SESSION_STORE[session_id] = {
         "raw_data":   req.raw_data,
         "dashboard":  req.dashboard,
         "filters":    req.filters,
+        "result":     computed_result,
         "sap_sid":    claims["sap_sid"],
         "sap_user":   claims["sap_user"],
         "created_at": int(time.time()),
@@ -399,32 +403,21 @@ def data_query(
         session = _SESSION_STORE.get(req.session_id)
         if not session:
             raise HTTPException(status_code=404, detail="Session expired")
-        resolved_raw_data = session.get("raw_data")
 
-    elif req.raw_data:
-        resolved_raw_data = _extract_cof_rows(req.raw_data)
+        result = session.get("result")
 
-    if not resolved_raw_data:
+        if not result:
+            raise HTTPException(status_code=500, detail="Result not found in session")
+
+    else:
         raise HTTPException(
             status_code=400,
-            detail="No data provided",
+            detail="Session ID required",
         )
 
-    # Calculate
-    result = calculate_cof_dashboard(req.filters or {}, resolved_raw_data)
-
+    
     token = authorization.split(" ", 1)[1] if authorization and authorization.startswith("Bearer ") else ""
 
-    frontend_url = (
-        f"{REACT_APP_URL}"
-        f"?token={token}"
-        f"&sid={claims.get('sap_sid', '')}"
-        f"&client={claims.get('sap_client', '')}"
-        f"&dashboard=cof_dashboard"
-
-    )
-
-    result["frontend_url"] = frontend_url
     result["session_id"] = None
 
     return result
