@@ -2,7 +2,7 @@
 export const NAV_PAGES = [
   { id: 'overview',     label: 'Overview',         section: 'Navigation' },
   { id: 'exposure',     label: 'Exposure Analysis',          section: 'Navigation' },
-  { id: 'loans', label: 'Loan Portfolio',      section: 'Data Views' },
+  // { id: 'loans', label: 'Loan Portfolio',      section: 'Data Views' },
   { id: 'rates',        label: 'Interest & Rates',  section: 'Data Views' },
   { id: 'borrowers',    label: 'Borrower Views',         section: 'Data Views' },
   { id: 'transactions', label: 'Transactions',      section: '' },
