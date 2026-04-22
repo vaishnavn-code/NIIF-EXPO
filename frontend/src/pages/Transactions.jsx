@@ -47,7 +47,7 @@ export default function Transactions({ data }) {
     charts["Loan Size Distribution"]?.values || {},
   ).map(([label, value]) => ({
     label,
-    count: Number(value),
+    value: Number(value),
   }));
 
   // Yearly
@@ -464,7 +464,7 @@ export default function Transactions({ data }) {
           <div className="chart-subtitle">SANCTION AMOUNT BUCKETS</div>
           <VerticalBar
             data={loanSizeData}
-            dataKey="count"
+            dataKey="value"
             nameKey="label"
             height={400}
             formatter={(v) => `₹${Number(v).toLocaleString("en-IN")} Cr`}
@@ -480,6 +480,7 @@ export default function Transactions({ data }) {
             data={quarterlyData}
             dataKey="value"
             nameKey="quarter"
+            height={400}
             formatter={(v) => `₹${Number(v).toLocaleString("en-IN")} Cr`}
           />
         </div>
@@ -548,6 +549,7 @@ export default function Transactions({ data }) {
             nameKey="label"
             formatter={(v) => `₹${Number(v).toLocaleString("en-IN")} Cr`}
             slantLabels={true}
+            height={400}
           />
         </div>
 
@@ -566,6 +568,7 @@ export default function Transactions({ data }) {
             dataKey="value"
             nameKey="label"
             slantLabels={true}
+            height={400}
             formatter={(v) => `₹${Number(v).toLocaleString("en-IN")} Cr`}
           />
         </div>
