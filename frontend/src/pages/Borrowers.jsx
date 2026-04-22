@@ -152,6 +152,7 @@ const totalPages = Math.ceil(borrowersTable.length / PER_PAGE);
             color="url(#intGrad)"
             slantLabels={true}
             isCurrency={true}
+            height={360}
             formatter={(v) => `₹${(v / 1e7).toLocaleString("en-IN")} Cr`} 
           />
         </div>
@@ -175,6 +176,7 @@ const totalPages = Math.ceil(borrowersTable.length / PER_PAGE);
             color="url(#intGrad)"
             slantLabels={true}
             isCurrency={true}
+            height={360}
             formatter={(v) => `₹${(v / 1e7).toLocaleString("en-IN")} Cr`} 
           />
         </div>

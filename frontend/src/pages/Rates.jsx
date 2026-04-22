@@ -130,6 +130,7 @@ export default function Rates({ data }) {
             nameKey="label"
             color="url(#ratePurpleGrad)"
             barSize={44}
+            height={400}
             />
         </div>
         <div className="chart-card">
@@ -140,6 +141,7 @@ export default function Rates({ data }) {
             dataKey="count"
             nameKey="label"
             barSize={44}
+            height={400}
           />
         </div>
       </div>
@@ -160,6 +162,7 @@ export default function Rates({ data }) {
             nameKey="name"
             color="var(--green)"
             barSize={44}
+            height={400}
             noDecimals={true}
             isCurrency={true}
             formatter={(v) => `₹${(v / 1e7).toLocaleString("en-IN")} Cr`} 
@@ -181,6 +184,7 @@ export default function Rates({ data }) {
             slantLabels={true}
             noDecimals={true}
             isCurrency={true}
+            height={400}
             formatter={(v) => `₹${(v / 1e7).toLocaleString("en-IN")} Cr`} 
           />
         </div>

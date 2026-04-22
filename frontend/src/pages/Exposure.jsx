@@ -288,7 +288,7 @@ const totalPagesLocal = Math.ceil(filteredRows.length / PAGE_SIZE);  return (
                 color: "rgba(252, 218, 172, 1)", //  your color
               },
             ]}
-            height={280}
+            height={300}
             formatter={(v) => `₹${(v / 1e7).toLocaleString("en-IN")} Cr`}
           />
         </div>
@@ -308,7 +308,7 @@ const totalPagesLocal = Math.ceil(filteredRows.length / PAGE_SIZE);  return (
             dataKey="value"
             nameKey="name"
             color="url(#intGrad)"
-            height={260}
+            height={360}
             barSize={30}
             slantLabels={true}
             isCurrency={true}
@@ -328,7 +328,7 @@ const totalPagesLocal = Math.ceil(filteredRows.length / PAGE_SIZE);  return (
             dataKey="value"
             nameKey="name"
             color="url(#rateGrad)"
-            height={260}
+            height={360}
             barSize={30}
             unit="%"
             slantLabels={true}

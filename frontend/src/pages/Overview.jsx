@@ -689,7 +689,7 @@ export default function Overview({ data }) {
             data={topGroupsOutstanding}
             dataKey="count"
             nameKey="label"
-            height={260}
+            height={360}
             barSize={20}
             slantLabels={true}
             formatter={(v) => `₹${v.toLocaleString("en-IN")} Cr`}
@@ -701,7 +701,7 @@ export default function Overview({ data }) {
           <DonutChart
             data={productDonut}
             colors={["#1565c0", "#00acc1"]}
-            height={260}
+            height={320}
             formatter={(v) => `₹${(v || 0).toFixed(2)} Cr`}
           />
           <DonutLegend
@@ -721,7 +721,7 @@ export default function Overview({ data }) {
             data={tenorChartData}
             dataKey="count"
             nameKey="label"
-            height={220}
+            height={320}
           />
         </div>
         <div className="chart-card">
@@ -731,7 +731,7 @@ export default function Overview({ data }) {
             data={rateChartData}
             dataKey="count"
             nameKey="label"
-            height={220}
+            height={320}
           />
         </div>
       </div>
@@ -756,7 +756,7 @@ export default function Overview({ data }) {
                 gradient: "greenGrad",
               },
             ]}
-            height={280}
+            height={380}
             formatter={(v) => `₹${(v / 1e7).toLocaleString("en-IN")} Cr`}
           />
         </div>
@@ -766,7 +766,7 @@ export default function Overview({ data }) {
           <DonutChart
             data={collectionDonut}
             colors={["#1565c0", "#00acc1", "#90caf9"]}
-            height={220}
+            height={320}
             formatter={(v) => `₹${Math.round((v || 0) / 1e7).toLocaleString("en-IN")} Cr`}
           />
           <DonutLegend

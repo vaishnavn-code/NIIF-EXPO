@@ -186,8 +186,7 @@ export function HorizontalBar({
         data={data}
         layout="vertical"
         barCategoryGap="25%"
-        margin={{ top: 10, right: 20, left: 20, bottom: 10 }}
-      >
+        margin={{ top: 20, right: 8, left: 0, bottom: 20 }}>
         <defs>
           <linearGradient id="hbarBlueGrad" x1="0" y1="0" x2="1" y2="0">
             <stop offset="0%" stopColor="rgba(220, 238, 253, 1)" />{" "}
