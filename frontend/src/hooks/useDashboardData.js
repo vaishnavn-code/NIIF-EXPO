@@ -1,5 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dashboardApi } from '../api/client'
+import axios from 'axios'
+
+const api = axios.create({
+  baseURL: 'https://sap-cloud-analytics-aah0gbcrf3ckgefc.centralindia-01.azurewebsites.net/',
+  // baseURL: 'http://127.0.0.1:8001',
+  // Use a safer default for heavier backend computations.
+  timeout: 90000,
+  headers: { 'Content-Type': 'application/json' },
+})
 
 /**
  * useDashboardData — master hook.
@@ -69,24 +78,73 @@ export function usePaginatedData(fetcher, defaults = {}) {
 /**
  * useInsights — fetch AI insights on demand.
  */
+
+async function getInsightsContext(sessionId, token) {
+  const res = await api.post(
+    "/data/query/ai",   // no localhost here
+    {
+      query_type: "cof_dashboard",
+      session_id: sessionId,
+      filters: {}
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,  // ✅ per-request header
+      },
+    }
+  );
+
+  return res.data;
+}
+
+async function generateInsights(context) {
+  const res = await fetch(
+    "https://dashboard-insight-hrf3cpafhxgsf7fz.centralindia-01.azurewebsites.net/poc/insights/exposures",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body:  JSON.stringify(context),
+    }
+  );
+
+  if (!res.ok) throw new Error("Insights API failed");
+
+  return res.json();
+}
+
 export function useInsights() {
-  const [insights, setInsights] = useState(null)
-  const [loading, setLoading]   = useState(false)
-  const [error, setError]       = useState(null)
+  const [insights, setInsights] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const generate = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const ctx = await dashboardApi.getInsightsContext()
-      const res = await dashboardApi.generateInsights(ctx)
-      setInsights(res)
-    } catch (e) {
-      setError(e.message)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+    setLoading(true);
+    setError(null);
 
-  return { insights, loading, error, generate }
+       const params = new URLSearchParams(window.location.search);
+      const sessionId = params.get("session_id");
+      const token = params.get("token");
+
+      if (!sessionId || !token) {
+        throw new Error("Missing session or token");
+      }
+
+    try {
+   
+
+      const context = await getInsightsContext(sessionId, token);
+      const result = await generateInsights(context);
+
+      setInsights(result);
+
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { insights, loading, error, generate };
 }
