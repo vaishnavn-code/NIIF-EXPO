@@ -7,7 +7,6 @@ import {
   GroupedBar,
   VerticalBarWithLineOverview,
 } from "../components/charts/BarCharts";
-import { Spinner, ErrorMsg } from "../components/ui/helpers";
 import { useInsights } from "../hooks/useDashboardData";
 import DonutLegend from "../components/charts/DonutLegend";
 import React from "react";
@@ -51,6 +50,37 @@ export default function Overview({ data }) {
   const [selectedYear, setSelectedYear] = useState("All");
 
   const kpi = data?.overview?.kpi || {};
+  const insightItems = useMemo(() => {
+    if (Array.isArray(insights?.insights)) return insights.insights;
+    if (Array.isArray(insights)) return insights;
+    if (!insights || typeof insights !== "object") return [];
+
+    return [
+      insights.headline
+        ? { insight: insights.headline, reasoning: [], evidence: [], tag: "Headline" }
+        : null,
+      insights.risk_flag
+        ? { insight: insights.risk_flag, reasoning: [], evidence: [], tag: "Risk" }
+        : null,
+      insights.opportunity
+        ? {
+            insight: insights.opportunity,
+            reasoning: [],
+            evidence: [],
+            tag: "Opportunity",
+          }
+        : null,
+      insights.watchlist
+        ? { insight: insights.watchlist, reasoning: [], evidence: [], tag: "Watchlist" }
+        : null,
+    ].filter(Boolean);
+  }, [insights]);
+
+  const insightSummary = insightItems[0]?.insight || "";
+  const insightCount = insightItems.length;
+  const insightModel = insights?.llm?.model || insights?.model || "AI-generated";
+  const ragEnabled = Boolean(insights?.meta?.rag?.enabled);
+
   const productDonut = useMemo(() => {
     const productChart = data?.overview?.charts?.["Product Type"];
 
@@ -106,19 +136,19 @@ export default function Overview({ data }) {
   }, [data]);
 
   const topGroupsOutstanding = useMemo(() => {
-  const groupChart =
-    data?.overview?.charts?.["Group by Outstanding & Sanction"];
+    const groupChart =
+      data?.overview?.charts?.["Group by Outstanding & Sanction"];
 
-  if (!groupChart) return [];
+    if (!groupChart) return [];
 
-  return groupChart.values
-    .map((item) => ({
-      label: item.bp_group,
-      count: +(item.outstanding / 1e7).toFixed(2), // convert to Cr
-    }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, topN);
-}, [data, topN]);
+    return groupChart.values
+      .map((item) => ({
+        label: item.bp_group,
+        count: +(item.outstanding / 1e7).toFixed(2), // convert to Cr
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, topN);
+  }, [data, topN]);
 
   const topGroupsDual = useMemo(() => {
     const groupChart =
@@ -164,7 +194,12 @@ export default function Overview({ data }) {
       filtered.forEach((r) => {
         const monthKey = r.date.slice(0, 7); // "YYYY-MM"
         if (!monthMap[monthKey]) {
-          monthMap[monthKey] = { name: monthKey, loan: 0, sanction: 0, outstanding: 0 };
+          monthMap[monthKey] = {
+            name: monthKey,
+            loan: 0,
+            sanction: 0,
+            outstanding: 0,
+          };
         }
         monthMap[monthKey].loan += r.loan;
         monthMap[monthKey].sanction += r.sanction;
@@ -432,6 +467,107 @@ export default function Overview({ data }) {
           accent="c4"
         /> */}
       </div>
+      <div className="section-label">Gen AI Insights</div>
+      <div className="card ai-panel">
+        <div className="ai-panel-header">
+          <div className="ai-panel-brand">
+            <div className="ai-panel-icon">✦</div>
+            <div className="ai-panel-title-block">
+              <div className="ai-panel-title">AI Portfolio Insights</div>
+              <div className="ai-panel-subtitle">Powered by Insights API</div>
+            </div>
+          </div>
+          <button
+            className="insights-btn"
+            onClick={generate}
+            disabled={aiLoading}
+          >
+            {aiLoading ? "Analysing..." : "✦ Generate Insights"}
+          </button>
+        </div>
+        <div className="ai-panel-body">
+          {aiLoading && (
+            <div className="ai-loading show">
+              <div className="ai-loading-dots">
+                <span className="ai-loading-dot"></span>
+                <span className="ai-loading-dot"></span>
+                <span className="ai-loading-dot"></span>
+              </div>
+              <div className="ai-loading-text">
+                Generating portfolio insights...
+              </div>
+            </div>
+          )}
+
+          {!aiLoading && aiError && (
+            <div className="ai-error show">{aiError}</div>
+          )}
+
+          {!aiLoading && !aiError && insightItems.length > 0 && (
+            <div className="ai-result show">
+              <div className="ai-summary-hero">
+                <div className="ai-summary-label">Executive Summary</div>
+                <div className="ai-summary-text">{insightSummary}</div>
+              </div>
+
+              <div className="ai-meta-strip">
+                <div className="ai-meta-pill">Insights: {insightCount}</div>
+                <div className="ai-meta-pill">Model: {insightModel}</div>
+                <div className="ai-meta-pill">
+                  RAG: {ragEnabled ? "Enabled" : "Disabled"}
+                </div>
+              </div>
+
+              <div className="ai-insights-list">
+                {insightItems.map((item, idx) => (
+                  <div key={idx} className="ai-insight-card">
+                    <div className="ai-insight-card-header">
+                      <div className="ai-insight-card-title">
+                        <div className="ai-insight-index">{idx + 1}</div>
+                        <div className="ai-insight-heading">Insight {idx + 1}</div>
+                      </div>
+                      <div className="ai-insight-tag general">
+                        {item.tag || "Insight"}
+                      </div>
+                    </div>
+
+                    <div className="ai-insight-card-body">
+                      <div className="ai-insight-main">{item.insight}</div>
+
+                      {item.reasoning?.length > 0 && (
+                        <div className="ai-detail-section">
+                          <div className="ai-detail-heading">Reasoning</div>
+                          <ul className="ai-detail-list">
+                            {item.reasoning.map((reason, reasonIndex) => (
+                              <li key={reasonIndex}>{reason}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {item.evidence?.length > 0 && (
+                        <div className="ai-detail-section">
+                          <div className="ai-detail-heading">Evidence</div>
+                          <ul className="ai-detail-list evidence">
+                            {item.evidence.map((evidence, evidenceIndex) => (
+                              <li key={evidenceIndex}>{evidence}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {!insights && !aiLoading && !aiError && (
+            <div className="ai-empty-state">
+              Click the button above to generate AI-powered portfolio insights.
+            </div>
+          )}
+        </div>
+      </div>
       <div className="section-label">Disbursement Activity Trend</div>
       <div className="chart-card">
         {/* TITLE */}
@@ -597,46 +733,6 @@ export default function Overview({ data }) {
         />
       </div>
       {/* <ActivityChart timeseries={timeseries} /> */}
-      <div className="section-label">Gen AI Insights</div>
-      <div className="card">
-        <div className="card-title">
-          Portfolio Intelligence
-          <button
-            className="insights-btn"
-            onClick={generate}
-            disabled={aiLoading}
-          >
-            {aiLoading ? "⏳ Analysing…" : "✦ Generate AI Insights"}
-          </button>
-        </div>
-        {aiError && <ErrorMsg message={aiError} />}
-        {insights && (
-          <div className="insights-grid">
-            {[
-              { label: "📊 Headline", text: insights.headline },
-              { label: "⚠ Risk Flag", text: insights.risk_flag },
-              { label: "💡 Opportunity", text: insights.opportunity },
-              { label: "👁 Watchlist", text: insights.watchlist },
-            ].map((tile) => (
-              <div key={tile.label} className="insight-tile">
-                <div className="insight-tile-label">{tile.label}</div>
-                <div className="insight-tile-text">{tile.text}</div>
-              </div>
-            ))}
-          </div>
-        )}
-        {!insights && !aiLoading && (
-          <div
-            style={{
-              color: "var(--text-muted)",
-              fontSize: ".76rem",
-              padding: "8px 0",
-            }}
-          >
-            Click the button above to generate AI-powered portfolio insights.
-          </div>
-        )}
-      </div>
       <div className="section-label">Portfolio Distribution</div>
       <div className="two-col">
         <div className="chart-card">
@@ -767,14 +863,18 @@ export default function Overview({ data }) {
             data={collectionDonut}
             colors={["#1565c0", "#00acc1", "#90caf9"]}
             height={320}
-            formatter={(v) => `₹${Math.round((v || 0) / 1e7).toLocaleString("en-IN")} Cr`}
+            formatter={(v) =>
+              `₹${Math.round((v || 0) / 1e7).toLocaleString("en-IN")} Cr`
+            }
           />
           <DonutLegend
             data={collectionDonut}
             colors={["#1565c0", "#00acc1", "#90caf9"]}
             showPercent={true}
             showValue={true}
-            valueFormatter={(v) => `₹${Math.round((v || 0) / 1e7).toLocaleString("en-IN")} Cr`}
+            valueFormatter={(v) =>
+              `₹${Math.round((v || 0) / 1e7).toLocaleString("en-IN")} Cr`
+            }
           />
         </div>
       </div>

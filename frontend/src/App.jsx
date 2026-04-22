@@ -9,7 +9,7 @@ import Transactions from "./pages/Transactions";
 import { Spinner, ErrorMsg } from "./components/ui/helpers";
 import { useDashboardData } from "./hooks/useDashboardData";
 import Loans from "./pages/Loans";
-import mockData from "./data/mockOverview.json";
+// import mockData from "./data/mockOverview.json";
 import React from "react";
 
 const PAGE_TITLES = {
