@@ -553,12 +553,11 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
     rate_buckets = {"<7 %": 0, "7-9 %": 0, "9-12 %": 0, ">12 %": 0}
     rate_buckets_disb = {"<7%": set(), "7-8%": set(), "8-8.5%": set(), "8.5-9%": set(), "9-9.5%": set(), "9.5-10%": set(),">10%": set()}
     sanction_buckets_disb = {
-        "<5 Cr": set(),
-        "5-10 Cr": set(),
-        "10-15 Cr": set(),
-        "15-20 Cr": set(),
-        "20-25 Cr": set(),
-        "25+ Cr": set()
+        "<50 Cr": set(),
+        "50-250 Cr": set(),
+        "250-500 Cr": set(),
+        "500-1000 Cr": set(),
+        ">1000 Cr": set()
     }
     disbursements_activity = {}
     disbursements_by_year = {}
@@ -766,18 +765,16 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
         if disb_no:
             amt_cr = sanction_amt / 1e7   # convert to Cr
 
-            if amt_cr < 5:
-                sanction_buckets_disb["<5 Cr"].add(disb_no)
-            elif amt_cr < 10:
-                sanction_buckets_disb["5-10 Cr"].add(disb_no)
-            elif amt_cr < 15:
-                sanction_buckets_disb["10-15 Cr"].add(disb_no)
-            elif amt_cr < 20:
-                sanction_buckets_disb["15-20 Cr"].add(disb_no)
-            elif amt_cr < 25:
-                sanction_buckets_disb["20-25 Cr"].add(disb_no)
+            if amt_cr < 50:
+                sanction_buckets_disb["<50 Cr"].add(disb_no)
+            elif amt_cr > 50 and amt_cr <= 250:
+                sanction_buckets_disb["50-250 Cr"].add(disb_no)
+            elif amt_cr > 250 and amt_cr <= 500:
+                sanction_buckets_disb["250-500 Cr"].add(disb_no)
+            elif amt_cr > 500 and amt_cr <= 1000:
+                sanction_buckets_disb["500-1000 Cr"].add(disb_no)
             else:
-                sanction_buckets_disb["25+ Cr"].add(disb_no)
+                sanction_buckets_disb[">1000 Cr"].add(disb_no)
         sanction_buckets_disb_counts = {
             k: len(v) for k, v in sanction_buckets_disb.items()
         }
@@ -1033,3 +1030,582 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
     }    
 
     return response
+
+# old response --------------------
+# def calculate_cof_dashboard(filters: dict, raw_data=None):
+#     """
+#     COF calculation — aggregates raw rows into the render_state shape
+#     expected by cofDashboardEngine.js (products, lenders, maturity, transactions, totals).
+#     """
+#     rows = _require_cof_rows(raw_data)
+
+#     # ── per-product aggregation ────────────────────────────────────────────
+#     products_map: dict[str, dict] = {}
+#     lenders_map:  dict[str, float] = {}
+#     maturity_map: dict[str, float] = {}
+#     borrowers_map: dict[str, dict] = {} 
+#     portfolios_map: dict[str, dict] = {}
+#     sanction_vs_os_map: dict[str, dict] = {}
+#     customer_set: set[str] = set()     
+#     disb_set: set[str] = set()
+#     currency_map: dict[str, float] = {}
+#     asset_classification_map: dict[str, float] = {}
+#     product_bp_map: dict[str, dict[str, float]] = {}
+#     bp_summary_map: dict[str, dict[str, float]] = {}
+#     bp_product_map: dict[str, dict[str, float]] = {}
+#     all_prd_types: set[str] = set()
+#     top_disb_map: dict[str, dict] = {}
+#     txn_type_map: dict[str, dict] = {}
+#     all_bp_groups: set[str] = set()
+#     lv_fixed_b = lv_float_b = 0.0
+#     lv_sec_b = lv_uns_b = lv_oth_b = 0.0
+#     total_loan_amt = 0.0
+#     total_os_amt   = 0.0
+#     total_prin_rec = 0.0
+#     total_exposure = 0.0
+#     total_sanction = 0.0
+#     lv_long_os  = 0.0
+#     transaction_rows: list[list] = []
+#     product_asset_map: dict[str, dict[str, float]] = {}
+#     all_asset_classes: set[str] = set()
+
+#     for row in rows:
+#         if not isinstance(row, dict):
+#             continue
+
+#         ptype = str(row.get("Prd Type") or "")
+#         pdesc = str(row.get("Prd Type Desc") or "")
+#         loan_amt = _to_float(row.get("Loan Amt"))
+#         os_amt   = _to_float(row.get("O/S Amt"))
+#         princ_rec = _to_float(row.get("Principal Received"))
+#         exp_amt   = _to_float(row.get("Exp Amt"))
+#         int_rate = _to_float(row.get("Interest Received"))
+#         interest_rate = _to_float(row.get("Int Rate"))
+#         curr = str(row.get("Curr") or "")
+#         interest_due   = _to_float(row.get("Interest Due"))
+#         sanction_no = str(row.get("Sanction No") or "")
+#         disb_no = row.get("Dis No") or ""
+#         sanction_amt = _to_float(row.get("Sanc Amt") or "")
+#         cpty = str(row.get("zcounterpty") or "")
+#         bp_group = str(row.get("BP Grp Name") or "Others")
+#         txn_type = str(row.get("Txn Type") or "")
+#         txn_type_desc = str(row.get("Txn Type Desc") or "")
+#         asset_class = str(row.get("Asset Classification") or "")
+#         borrower = str(row.get("Customer Name")) 
+#         portfolio = str(row.get("Portfolio Desc"))
+#         rtype = str(row.get("zrate_type") or "")
+#         portfo = str(row.get("zportfo_desc") or "")
+#         closing = float(row.get("zclosing_amt") or 0)
+#         accrual = float(row.get("zaccrual_amt") or 0)
+#         wt_avg = float(row.get("zwt_avg_amt") or 0)
+#         avg_f = float(row.get("zavg_funds") or 0)
+#         wt_int = float(row.get("zwt_int_amt") or 0)
+#         open_eir = float(row.get("zopen_eir") or 0)
+#         exit_eir = float(row.get("zexit_eir") or 0)
+#         avg_eir = float(row.get("zavg_rate_eir") or 0)
+#         avg_papm = float(row.get("zavg_rate_papm") or 0)
+#         end_raw = str(
+#             row.get("End Date") 
+#             or row.get("end_date") 
+#             or row.get("zend_date") 
+#             or row.get("maturity_date") 
+#             or ""
+#         )
+#         transaction_rows.append({
+#             "prd_type": ptype,
+#             "prd_type_desc": pdesc,
+#             "dis_no": str(disb_no),
+#             "customer_name": borrower,
+#             "bp_group": bp_group,
+#             "txn_type_desc": txn_type_desc,
+#             "portfolio_desc": portfolio,
+#             "start_date": format_date_yyyy_mm_dd(row.get("Start Date")),
+#             "end_date": format_date_yyyy_mm_dd(end_raw),
+#             "currency": curr,
+#             "int_rate": interest_rate,
+#             "loan_amt": round(loan_amt, 2),
+#             "os_amt": round(os_amt, 2),
+#             "interest_due": round(interest_due, 2),
+#             "total_interest_amt": round(int_rate, 2),  
+#             "upcoming_interest": round(_to_float(row.get("Upcoming Int")), 2),
+#             "asset_classification": asset_class
+#         })
+#         formatted_end = format_date_yyyy_mm_dd(end_raw)
+
+#         if formatted_end:
+#             yr = formatted_end[:4]  
+#             if yr.isdigit():
+#                 if yr not in maturity_map:
+#                     maturity_map[yr] = {
+#                         "os_amt": 0.0,
+#                         "sanction_amt": 0.0,
+#                         "utilization_amt": 0.0,
+#                         "loan_amt": 0.0,
+#                     }
+#                 maturity_map[yr]["os_amt"] += os_amt
+#                 maturity_map[yr]["sanction_amt"] += sanction_amt
+#                 maturity_map[yr]["loan_amt"] += loan_amt
+#         for yr, vals in maturity_map.items():
+#             sanc = vals.get("sanction_amt", 0.0)
+#             os_val = vals.get("os_amt", 0.0)
+#             loan_amt_maturity = vals.get("loan_amt", 0.0)            
+#             vals["utilization_pct"] = round((os_val / sanc) * 100, 2) if sanc > 0 else 0.0 
+#         lv_long_os = sum(
+#         vals.get("os_amt", 0.0)
+#         for year, vals in maturity_map.items()
+#         if year.isdigit() and int(year) >= 2029
+#         )           
+#         currency_map[curr] = currency_map.get(curr, 0.0) + os_amt
+#         customer_set.add(borrower)                   
+#         total_loan_amt += loan_amt
+#         total_os_amt    += os_amt
+#         total_prin_rec += princ_rec
+#         total_exposure += exp_amt
+#         total_sanction += sanction_amt
+        
+#         asset_classification_map[asset_class] = asset_classification_map.get(asset_class, 0.0) + os_amt
+#         bp_group = str(row.get("BP Grp Name") or "Others")
+#         all_bp_groups.add(bp_group)
+
+#         if pdesc not in product_bp_map:
+#             product_bp_map[pdesc] = {}
+
+#         if bp_group not in product_bp_map[pdesc]:
+#             product_bp_map[pdesc][bp_group] = 0.0
+
+#         product_bp_map[pdesc][bp_group] += os_amt
+
+#         if bp_group not in bp_summary_map:
+#             bp_summary_map[bp_group] = {
+#             "os_amt": 0.0,
+#             "sanction_amt": 0.0,
+#             "interest_due": 0.0,
+#             "exposure_amt": 0.0,
+#             "loan_amt": 0.0,
+#             "interest_rec": 0.0,
+#             "princ_rec": 0.0,
+#             "disb_set": set()  
+
+#         }
+
+#         bp_summary_map[bp_group]["os_amt"] += os_amt
+#         bp_summary_map[bp_group]["sanction_amt"] += sanction_amt
+#         bp_summary_map[bp_group]["interest_due"] += interest_due
+#         bp_summary_map[bp_group]["exposure_amt"] += exp_amt
+#         bp_summary_map[bp_group]["loan_amt"] += loan_amt
+#         bp_summary_map[bp_group]["interest_rec"] += int_rate
+#         bp_summary_map[bp_group]["princ_rec"] += princ_rec
+#         all_prd_types.add(ptype)
+
+#         if bp_group not in bp_product_map:
+#             bp_product_map[bp_group] = {}
+
+#         if ptype not in bp_product_map[bp_group]:
+#             bp_product_map[bp_group][ptype] = 0.0
+
+#         bp_product_map[bp_group][ptype] += os_amt
+
+#         if ptype not in products_map:
+#             products_map[ptype] = {
+#                 "zprd_type":    ptype,
+#                 "zprd_desc":    pdesc,
+#                 "zint_rec":    int_rate,
+#                 "zinterest_rate": interest_rate,
+#                 "zinterest_due": interest_due,
+#                 "zinterest_ratio": 0.0,
+#                 "zsanction_amt": 0.0,
+#                 "zdrawdown_rate": 0.0,
+#                 "zclosing_amt": 0.0,
+#                 "zaccrual_amt": 0.0,
+#                 "zwt_avg_amt":  0.0,
+#                 "zavg_funds":   0.0,
+#                 "zwt_int_amt":  0.0,
+#                 "zopen_eir_sum":  0.0,
+#                 "zexit_eir_sum":  0.0,
+#                 "zavg_eir_sum":   0.0,
+#                 "zavg_papm_sum":  0.0,
+#                 "zeir_cnt":       0,
+#                 "zloan_amt":    0.0,
+#                 "zos_amt": 0.0,
+#                 "zexp_amt": 0.0,
+#                 "zprinc_rec": 0.0,
+#                 "zint_rate": 0.0
+#             }
+#         p = products_map[ptype]
+#         p["zsanction_amt"] +=sanction_amt
+#         p["zclosing_amt"] += closing
+#         p["zaccrual_amt"] += accrual
+#         p["zloan_amt"] += loan_amt
+#         p["zos_amt"] += os_amt
+#         p["zexp_amt"] += exp_amt
+#         p["zprinc_rec"] += princ_rec
+#         p["zint_rate"] += int_rate
+#         p["zwt_avg_amt"] += wt_avg
+#         p["zavg_funds"] += avg_f
+#         p["zwt_int_amt"] += wt_int 
+#         p["zexposure"] = round(p["zsanction_amt"] - p["zos_amt"], 2)    
+#         p["zdrawdown_rate"] = round((p["zos_amt"] / p["zsanction_amt"]) * 100, 2) if p["zsanction_amt"] > 0 else 0.0
+#         p["zinterest_ratio"] = round((p["zinterest_due"] / p["zos_amt"]) * 100, 2) if p["zos_amt"] > 0 else 0.0
+#         if avg_eir:
+#             p["zopen_eir_sum"] += open_eir
+#             p["zexit_eir_sum"] += exit_eir
+#             p["zavg_eir_sum"] += avg_eir
+#             p["zavg_papm_sum"] += avg_papm
+#             p["zeir_cnt"] += 1
+
+#         # lender aggregation
+#         lenders_map[cpty] = lenders_map.get(cpty, 0.0) + closing
+#         # Borrower's aggregation
+#         if borrower not in borrowers_map:
+#             borrowers_map[borrower] = {
+#                 "os_amt": 0.0,
+#                 "sanction_amt": 0.0,
+#                 "intrest_rate": 0.0,
+#                 "interest_due": 0.0,
+#                 "utilization_rate": 0.0,
+#                 "bp_group": "" ,
+#                 "active_disb": 0,
+                
+#             }
+#         if disb_no:  # string check
+#             disb_set.add(str(disb_no))
+#             bp_summary_map[bp_group]["disb_set"].add(str(disb_no))
+#             borrowers_map[borrower]["active_disb"] += 1
+#         borrowers_map[borrower]["os_amt"] += os_amt
+#         borrowers_map[borrower]["interest_rate"] = interest_rate
+#         borrowers_map[borrower]["sanction_amt"] += sanction_amt
+#         borrowers_map[borrower]["interest_due"] += interest_due
+#         borrowers_map[borrower]["bp_group"] = bp_group
+#         borrowers_map[borrower]["utilization_rate"] = round((borrowers_map[borrower]["os_amt"] / borrowers_map[borrower]["sanction_amt"]) * 100, 2) if borrowers_map[borrower]["sanction_amt"] > 0 else 0.0
+#         if portfolio not in portfolios_map:
+#             portfolios_map[portfolio] = {
+#                 "os_amt": 0.0,
+#                 "sanction_amt": 0.0
+#             }
+#         portfolios_map[portfolio]["os_amt"] += os_amt
+#         portfolios_map[portfolio]["sanction_amt"] += sanction_amt   
+#         # Txn Type grouping
+#         if txn_type not in txn_type_map:
+#             txn_type_map[txn_type] = {
+#             "txn_type": txn_type,
+#             "txn_type_desc": txn_type_desc,
+#             "sanction_amt": 0.0,
+#             "os_amt": 0.0
+#         }
+
+#         txn_type_map[txn_type]["sanction_amt"] += sanction_amt
+#         txn_type_map[txn_type]["os_amt"] += os_amt
+
+#         if disb_no:
+#             if disb_no not in top_disb_map:
+#                 top_disb_map[disb_no] = {
+#                     "disb_no": disb_no,
+#                     "os_amt": 0.0,
+#                     "sanction_amt": 0.0
+#                 }
+
+#             top_disb_map[disb_no]["os_amt"] += os_amt
+#             top_disb_map[disb_no]["sanction_amt"] += sanction_amt
+
+#         # rate / portfolio splits
+#         if "fixed" in rtype.lower():
+#             lv_fixed_b += closing
+#         else:
+#             lv_float_b += closing
+
+#         pl = portfo.lower()
+#         if "secured" in pl and "unsecured" not in pl:
+#             lv_sec_b += closing
+#         elif "unsecured" in pl:
+#             lv_uns_b += closing
+#         else:
+#             lv_oth_b += closing
+
+#         # Sanction vs O/S Gap
+#         if ptype not in sanction_vs_os_map:
+#             sanction_vs_os_map[ptype] = {
+#             "zprd_type": ptype,
+#             "zprd_desc": pdesc,
+#             "sanction_amt": 0.0,
+#             "os_amt": 0.0,
+#             "seen_sanctions": set(),   
+#             "sanction_map": {}         
+#         }
+#         sv = sanction_vs_os_map[ptype]
+#         sv["os_amt"] += os_amt
+#         if sanction_no and sanction_no not in sv["seen_sanctions"]:
+#             sv["seen_sanctions"].add(sanction_no)
+#             sv["sanction_amt"] += sanction_amt   
+#         asset_class = str(row.get("Asset Classification") or "Standard")
+#         all_asset_classes.add(asset_class)
+
+#         if pdesc not in product_asset_map:
+#             product_asset_map[pdesc] = {}
+
+#         if asset_class not in product_asset_map[pdesc]:
+#             product_asset_map[pdesc][asset_class] = 0.0
+
+#         product_asset_map[pdesc][asset_class] += os_amt    
+#     product_bp_exposure = []
+
+#     for prd_desc, bp_data in product_bp_map.items():
+#         bp_list = []
+
+#         for bp in all_bp_groups:
+#             bp_list.append({
+#                 "bp_group": bp,
+#                 "os_amt": round(bp_data.get(bp, 0.0), 2)   # 👈 KEY FIX
+#             })
+
+#         product_bp_exposure.append({
+#             "zprd_desc": prd_desc,
+#             "bp_groups": bp_list
+#         })
+#     product_asset_exposure = []
+
+#     for prd_desc, asset_data in product_asset_map.items():
+#         asset_list = []
+
+#         for asset in all_asset_classes:
+#             asset_list.append({
+#                 "asset_group": asset,
+#                 "os_amt": round(asset_data.get(asset, 0.0), 2)
+#             })
+
+#         product_asset_exposure.append({
+#             "zprd_desc": prd_desc,
+#             "assets_groups": asset_list
+#         })    
+#     sanction_vs_os = [
+#                 {
+#                     "zprd_type": v["zprd_type"],
+#                     "zprd_desc": v["zprd_desc"],
+#                     "sanction_amt": round(v["sanction_amt"], 2),
+#                     "os_amt": round(v["os_amt"], 2),
+#                     "sanction_count": len(v["seen_sanctions"])
+#                 }
+#                 for v in sanction_vs_os_map.values()
+#     ]    
+#     bp_summary = sorted(
+#         [
+#             {
+#                 "bp_group": bp,
+#                 "os_amt": round(vals["os_amt"], 2),
+#                 "sanction_amt": round(vals["sanction_amt"], 2),
+#                 "interest_due": round(vals["interest_due"], 2),
+#                 "exposure_amt": round(vals["exposure_amt"], 2),
+#                 "disb_count": len(vals["disb_set"]), 
+#                 "loan_amt": round(vals["loan_amt"], 2),
+#                 "interest_rec": round(vals["interest_rec"], 2),
+#                 "princ_rec": round(vals["princ_rec"], 2),
+#                 "products": [
+#                     {
+#                         "prd_type": prd,
+#                         "os_amt": round(bp_product_map.get(bp, {}).get(prd, 0.0), 2)
+#                     }
+#                     for prd in all_prd_types  
+#                 ]
+#             }
+#             for bp, vals in bp_summary_map.items()
+#         ],
+#         key=lambda x: x["os_amt"],
+#         reverse=True
+#     )
+#     currency_summary = sorted(
+#     [
+#         {
+#             "currency": curr,
+#             "os_amt": round(amount, 2),
+#             "os_percent": round((amount / (total_os_amt or 1)) * 100, 2)
+#         }
+#         for curr, amount in currency_map.items()
+#     ],
+#     key=lambda x: x["os_amt"],
+#     reverse=True
+# )
+#     # ── sorted product list ────────────────────────────────────────────────
+#     products = sorted(products_map.values(),
+#                       key=lambda p: p["zclosing_amt"], reverse=True)
+
+#     asset_lookup = {p["zprd_desc"]: p["assets_groups"] for p in product_asset_exposure}
+
+#     for p in products:
+#         p["assets_groups"] = asset_lookup.get(p["zprd_desc"], [])                  
+#         lenders = sorted(
+#             [{"zcounterpty": k, "zclosing_amt": v}
+#                 for k, v in lenders_map.items()],
+#             key=lambda l: l["zclosing_amt"], reverse=True,
+#         )
+#     total_os = total_os_amt or 1.0
+#     customer_count = len(customer_set)  # customers len
+#     # Top 5 borrowers
+#     top_borrowers_five = sorted(
+#         [
+#             {
+#                 "zborrower": name,
+#                  "os_amt": round(vals["os_amt"], 2),
+#                 "sanction_amt": round(vals["sanction_amt"], 2),
+#                 "interest_rate": vals.get("interest_rate", 0.0),
+#                 "interest_due": round(vals.get("interest_due", 0.0), 2),
+#                 "os_percent": round((vals["os_amt"] / total_os) * 100, 2)
+#             }
+#             for name, vals in borrowers_map.items()
+#         ],
+#         key=lambda x: x["os_amt"],
+#         reverse=True
+#     )[:5]
+#     top_borrowers = sorted(
+#         [
+#             {
+#                 "zborrower": name,
+#                 "bp_group": vals.get("bp_group", ""),
+#                 "zinterest_rate": vals.get("interest_rate", 0.0),                
+#                 "os_amt": round(vals["os_amt"], 2),
+#                 "sanction_amt": round(vals["sanction_amt"], 2),
+#                 "interest_due": round(vals.get("interest_due", 0.0), 2),
+#                 "interest_rate": vals.get("interest_rate", 0.0),
+#                 "utilization_rate": vals.get("utilization_rate", 0.0),
+#                 "os_percent": round((vals["os_amt"] / total_os) * 100, 2),
+#                 "active_disb": vals.get("active_disb", 0),
+#             }
+#             for name, vals in borrowers_map.items()
+#         ],
+#         key=lambda x: x["os_amt"],
+#         reverse=True
+#     )
+#     # Top 5 Portfolios 
+#     top_portfolios = sorted(
+#         [
+#             {
+#                 "zportfolio": name or "Others",
+#                 "os_amt": round(vals["os_amt"], 2),
+#                 "sanction_amt": round(vals["sanction_amt"], 2),
+#                 "os_percent": round((vals["os_amt"] / total_os) * 100, 2)
+#             }
+#             for name, vals in portfolios_map.items()
+#         ],
+#         key=lambda x: x["os_amt"],
+#         reverse=True
+#     )
+#     asset_classification_summary = sorted(
+#         [
+#             {
+#                 "asset_class": name or "Standard",
+#                 "os_amt": round(os, 2),
+#                 "os_percent": round((os / total_os) * 100, 2)
+#             }
+#             for name, os in asset_classification_map.items()
+#         ],
+#         key=lambda x: x["os_amt"],
+#         reverse=True
+#     )
+#     # Txn Summary
+#     txn_type_summary = sorted(
+#     [
+#         {
+#             "txn_type": v["txn_type"],
+#             "txn_type_desc": v["txn_type_desc"],
+#             "sanction_amt": round(v["sanction_amt"], 2),
+#             "os_amt": round(v["os_amt"], 2)
+#         }
+#         for v in txn_type_map.values()
+#     ],
+#     key=lambda x: x["os_amt"],
+#     reverse=True
+# )
+# # Top 10 disbursements by OS amount
+#     top_disb_os = sorted(
+#         [
+#             {
+#                 "disb_no": v["disb_no"],
+#                 "os_amt": round(v["os_amt"], 2),
+#                 "sanction_amt": round(v["sanction_amt"], 2)
+#             }
+#             for v in top_disb_map.values()
+#         ],
+#         key=lambda x: x["os_amt"],
+#         reverse=True
+#     )[:10]
+#     if products:
+#             # Find product with maximum zos_amt
+#             top_product_by_os = max(products, key=lambda p: p.get("zos_amt", 0))
+#             top_product_by_inr = max(products, key=lambda p: p.get("zint_rec", 0))
+#             low_product_by_inr = min(products, key=lambda p: p.get("zint_rec", 0))
+#             lv_top_prd = top_product_by_os.get("zprd_type", "")
+#             lv_hi_prd = top_product_by_inr.get("zprd_type")
+#             lv_lo_prd = low_product_by_inr.get("zprd_type")
+#             lv_top_os_amt = round(top_product_by_os.get("zos_amt", 0), 2)
+#             lv_hi_int_amt = round(top_product_by_inr.get("zint_rate", 0), 2)
+#             lv_lo_int_amt = round(low_product_by_inr.get("zint_rate",0),2)
+#     else:
+#             lv_top_prd = ""
+#             lv_hi_prd = ""
+#             lv_lo_prd = ""
+#             lv_top_os_amt = 0.0
+#             lv_hi_int_amt = 0.0
+#             lv_lo_int_amt = 0.0
+
+
+  
+
+#     lv_largest_year = ""
+#     lv_largest_amt = 0.0
+#     lv_mat_horizon = 0
+
+#     if maturity_map:
+#         years = [int(y) for y in maturity_map.keys() if y.isdigit()]
+#         if years:
+#             lv_mat_horizon = max(years) - min(years)
+#     if maturity_map:
+#         lv_largest_year = max(
+#             maturity_map,
+#             key=lambda y: maturity_map[y]["os_amt"]
+#         )
+#         lv_largest_amt = maturity_map[lv_largest_year]["os_amt"]
+
+#     # Sanction vs O/S Gap
+
+#     totals = {
+#         "loan_amt": round(total_loan_amt, 2),
+#         "total_os_amt": round(total_os_amt,2),
+#         "total_prin_rec": round(total_prin_rec,2),
+#         "total_exposure": round(total_exposure),
+#         "total_sanction": round(total_sanction, 2),
+#         "lv_largest_year": lv_largest_year,
+#         "lv_largest_year_amt": round(lv_largest_amt, 2),
+#         "lv_mat_horizon": lv_mat_horizon,
+#         "lv_long_os": round(lv_long_os, 2),
+#         "lv_asset_class_cnt": len(all_asset_classes),
+#         "lv_top_prd":   lv_top_prd,
+#         "lv_hi_prd":    lv_hi_prd,
+#         "lv_lo_prd":    lv_lo_prd,
+#         "lv_disb_cnt": len(disb_set),
+#         "lv_grp_cnt": len(all_bp_groups),
+#         "lv_prd_cnt":   len(products),
+#         "lv_cust_cnt":  customer_count,
+#         "lv_avg_exp": total_exposure / customer_count if customer_count > 0 else 0.0,
+#     }
+
+#     return {
+#         "query_type": "cof_dashboard",
+#         "render_state": {
+#             "products":     products,
+#             # "lenders":      lenders,
+#             "maturity":     maturity_map,
+#             "transactions": transaction_rows,
+#             "borrowers":   top_borrowers_five,
+#             "borrowers_full": top_borrowers,
+#             "totals":       totals,           
+#             "portfolios":   top_portfolios,         
+#             "asset_classification": asset_classification_summary, 
+#             "sanctionVsOs": sanction_vs_os,
+#             "productBpExposure": product_bp_exposure,
+#             "bpSummary": bp_summary,
+#             "txnTypeSummary": txn_type_summary,
+#             "topDisbByOs": top_disb_os,
+#             "currencySummary": currency_summary,
+#         },
+
+#         "row_count": len(rows),
+#         "filters":   filters or {},
+#     }
