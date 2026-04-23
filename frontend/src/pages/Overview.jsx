@@ -49,6 +49,13 @@ export default function Overview({ data }) {
   const [viewMode, setViewMode] = useState("monthly");
   const [selectedYear, setSelectedYear] = useState("All");
 
+  const hardcodedInsightTags = [
+    "CONCENTRATION RISK",
+    "ASSET QUALITY",
+    "MATURITY PROFILE",
+    "UTILIZATION",
+    "CURRENCY RISK",
+  ];
   const kpi = data?.overview?.kpi || {};
   const insightItems = useMemo(() => {
     if (Array.isArray(insights?.insights)) return insights.insights;
@@ -57,10 +64,20 @@ export default function Overview({ data }) {
 
     return [
       insights.headline
-        ? { insight: insights.headline, reasoning: [], evidence: [], tag: "Headline" }
+        ? {
+            insight: insights.headline,
+            reasoning: [],
+            evidence: [],
+            tag: "Headline",
+          }
         : null,
       insights.risk_flag
-        ? { insight: insights.risk_flag, reasoning: [], evidence: [], tag: "Risk" }
+        ? {
+            insight: insights.risk_flag,
+            reasoning: [],
+            evidence: [],
+            tag: "Risk",
+          }
         : null,
       insights.opportunity
         ? {
@@ -71,14 +88,20 @@ export default function Overview({ data }) {
           }
         : null,
       insights.watchlist
-        ? { insight: insights.watchlist, reasoning: [], evidence: [], tag: "Watchlist" }
+        ? {
+            insight: insights.watchlist,
+            reasoning: [],
+            evidence: [],
+            tag: "Watchlist",
+          }
         : null,
     ].filter(Boolean);
   }, [insights]);
 
   const insightSummary = insightItems[0]?.insight || "";
   const insightCount = insightItems.length;
-  const insightModel = insights?.llm?.model || insights?.model || "AI-generated";
+  const insightModel =
+    insights?.llm?.model || insights?.model || "AI-generated";
   const ragEnabled = Boolean(insights?.meta?.rag?.enabled);
 
   const productDonut = useMemo(() => {
@@ -524,10 +547,29 @@ export default function Overview({ data }) {
                     <div className="ai-insight-card-header">
                       <div className="ai-insight-card-title">
                         <div className="ai-insight-index">{idx + 1}</div>
-                        <div className="ai-insight-heading">Insight {idx + 1}</div>
+                        <div className="ai-insight-heading">
+                          Insight {idx + 1}
+                        </div>
                       </div>
-                      <div className="ai-insight-tag general">
+                      {/* <div className="ai-insight-tag general">
                         {item.tag || "Insight"}
+                      </div> */}
+                      <div
+                        className={`ai-insight-tag ${
+                          idx === 0
+                            ? "concentration-risk"
+                            : idx === 1
+                              ? "asset-quality"
+                              : idx === 2
+                                ? "maturity-profile"
+                                : idx === 3
+                                  ? "utilization"
+                                  : idx === 4
+                                    ? "currency-risk"
+                                    : "currency-risk"
+                        }`}
+                      >
+                        {hardcodedInsightTags[idx] || "CURRENCY RISK"}
                       </div>
                     </div>
 

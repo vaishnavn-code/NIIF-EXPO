@@ -2346,3 +2346,74 @@ header {
 .txn-table .ctr {
   text-align: center;
 }
+.ai-insight-tag.concentration-risk {
+  background: #fdf4e7;
+  color: #e18e12;
+  border: 1px solid #f6d7a7;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ASSET QUALITY */
+.ai-insight-tag.asset-quality {
+  background: #fdeaea;
+  color: #d14b4b;
+  border: 1px solid #f5c2c2;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* MATURITY PROFILE */
+.ai-insight-tag.maturity-profile {
+  background: #f1ebff;
+  color: #7c5ce6;
+  border: 1px solid #d9ccff;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+}
+
+.ai-insight-tag.utilization {
+  background: #f1ebff;
+  color: #7c5ce6;
+  border: 1px solid #d9ccff;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+}
+
+.ai-insight-tag.currency-risk {
+  background: #fdeaea;
+  color: #d14b4b;
+  border: 1px solid #f5c2c2;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+}
