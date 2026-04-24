@@ -93,17 +93,56 @@ WHITELISTED_ENVIRONMENTS: dict[str, list[str]] = {
 # Keyed by session_id (UUID). Each entry expires with the JWT (15 min).
 # In production: replace with Redis via azure-cache-for-redis or similar.
 # ---------------------------------------------------------------------------
-_SESSION_STORE: dict[str, dict] = {}
-_TOKEN_SESSION_MAP: dict[str, str] = {}  # Maps JWT jti to session_id for efficient cleanup on token expiry
+# _SESSION_STORE: dict[str, dict] = {}
+# _TOKEN_SESSION_MAP: dict[str, str] = {}  # Maps JWT jti to session_id for efficient cleanup on token expiry
+
+# def _purge_expired_sessions():
+#     """Remove sessions older than JWT_EXPIRY_SECONDS. Called on every write."""
+#     now = int(time.time())
+#     expired = [k for k, v in _SESSION_STORE.items() if v.get(
+#         "expires_at", 0) < now]
+#     for k in expired:
+#         del _SESSION_STORE[k]
+SESSION_DIR = os.getenv("SESSION_DIR", "/home/site/wwwroot/sessions")
+os.makedirs(SESSION_DIR, exist_ok=True)
+def _get_session_path(session_id: str) -> str:
+    return os.path.join(SESSION_DIR, f"{session_id}.json")
+
+
+def save_session(session_id: str, data: dict):
+    with open(_get_session_path(session_id), "w") as f:
+        json.dump(data, f)
+
+
+def load_session(session_id: str):
+    path = _get_session_path(session_id)
+    if not os.path.exists(path):
+        return None
+
+    with open(path, "r") as f:
+        return json.load(f)
+
+
+def delete_session(session_id: str):
+    path = _get_session_path(session_id)
+    if os.path.exists(path):
+        os.remove(path)
+
 
 def _purge_expired_sessions():
-    """Remove sessions older than JWT_EXPIRY_SECONDS. Called on every write."""
     now = int(time.time())
-    expired = [k for k, v in _SESSION_STORE.items() if v.get(
-        "expires_at", 0) < now]
-    for k in expired:
-        del _SESSION_STORE[k]
 
+    for file in os.listdir(SESSION_DIR):
+        path = os.path.join(SESSION_DIR, file)
+
+        try:
+            with open(path, "r") as f:
+                data = json.load(f)
+
+            if data.get("expires_at", 0) < now:
+                os.remove(path)
+        except:
+            continue
 
 # ---------------------------------------------------------------------------
 # App
@@ -314,8 +353,8 @@ def get_token(req: AuthRequest):
         "env":          f"{req.sap_sid.upper()}/{req.sap_client}",
     }
 
-# REACT_APP_URL = "http://localhost:5173/"
-REACT_APP_URL = "https://green-hill-0732a7b00.2.azurestaticapps.net"
+REACT_APP_URL = "http://localhost:5173/"
+# REACT_APP_URL = "https://green-hill-0732a7b00.2.azurestaticapps.net"
 
 
 @app.post("/session/create")
@@ -328,40 +367,51 @@ def session_create(
 
     token = authorization.split(" ")[1]
 
-    existing_session_id = _TOKEN_SESSION_MAP.get(token)
+    # existing_session_id = _TOKEN_SESSION_MAP.get(token)
 
-    if existing_session_id:
-        session = _SESSION_STORE.get(existing_session_id)
+    # if existing_session_id:
+    #     session = _SESSION_STORE.get(existing_session_id)
 
-        if session and session["expires_at"] > int(time.time()):
-            session["raw_data"] = req.raw_data
-            session["dashboard"] = req.dashboard
-            session["filters"] = req.filters
+    #     if session and session["expires_at"] > int(time.time()):
+    #         session["raw_data"] = req.raw_data
+    #         session["dashboard"] = req.dashboard
+    #         session["filters"] = req.filters
 
-            session["result"] = calculate_cof_dashboard(req.filters or {}, req.raw_data)
-            session["result_ai"] = calculate_cof_dashboard_insights(req.filters or {}, req.raw_data)
+    #         session["result"] = calculate_cof_dashboard(req.filters or {}, req.raw_data)
+    #         session["result_ai"] = calculate_cof_dashboard_insights(req.filters or {}, req.raw_data)
 
-            frontend_url = (
-                f"{REACT_APP_URL}"
-                f"?token={token}"
-                f"&sid={claims['sap_sid']}"
-                f"&client={claims['sap_client']}"
-                f"&dashboard={req.dashboard}"
-                f"&session_id={existing_session_id}"
-            )
+    #         frontend_url = (
+    #             f"{REACT_APP_URL}"
+    #             f"?token={token}"
+    #             f"&sid={claims['sap_sid']}"
+    #             f"&client={claims['sap_client']}"
+    #             f"&dashboard={req.dashboard}"
+    #             f"&session_id={existing_session_id}"
+    #         )
 
-            return {
-                "session_id": existing_session_id,
-                "frontend_url": frontend_url,
-                "row_count": len(req.raw_data),
-                "expires_in": session["expires_at"] - int(time.time()),
-                "reused": True   # optional flag
-            }
+    #         return {
+    #             "session_id": existing_session_id,
+    #             "frontend_url": frontend_url,
+    #             "row_count": len(req.raw_data),
+    #             "expires_in": session["expires_at"] - int(time.time()),
+    #             "reused": True   # optional flag
+    #         }
 
     session_id = str(uuid.uuid4())
     computed_result = calculate_cof_dashboard(req.filters or {}, req.raw_data)
     computed_result_ai = calculate_cof_dashboard_insights(req.filters or {}, req.raw_data)
-    _SESSION_STORE[session_id] = {
+    # _SESSION_STORE[session_id] = {
+    #     "raw_data":   req.raw_data,
+    #     "dashboard":  req.dashboard,
+    #     "filters":    req.filters,
+    #     "result":     computed_result,
+    #     "result_ai":  computed_result_ai,
+    #     "sap_sid":    claims["sap_sid"],
+    #     "sap_user":   claims["sap_user"],
+    #     "created_at": int(time.time()),
+    #     "expires_at": claims["exp"],
+    # }
+    session_data = {
         "raw_data":   req.raw_data,
         "dashboard":  req.dashboard,
         "filters":    req.filters,
@@ -373,7 +423,8 @@ def session_create(
         "expires_at": claims["exp"],
     }
 
-    _TOKEN_SESSION_MAP[token] = session_id
+    save_session(session_id, session_data)
+    # _TOKEN_SESSION_MAP[token] = session_id
 
     frontend_url = (
         f"{REACT_APP_URL}"
@@ -402,7 +453,7 @@ def data_query(
     resolved_raw_data = None
 
     if req.session_id:
-        session = _SESSION_STORE.get(req.session_id)
+        session = load_session(req.session_id)
         if not session:
             raise HTTPException(status_code=404, detail="Session expired")
 
@@ -434,7 +485,7 @@ def data_query_ai(
     resolved_raw_data = None
 
     if req.session_id:
-        session = _SESSION_STORE.get(req.session_id)
+        session = load_session(req.session_id)
         if not session:
             raise HTTPException(status_code=404, detail="Session expired")
 
@@ -1010,9 +1061,7 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
         "kpi": {
       "Total_Transactions": {
         "title": str(len(disb_set)),
-        "subtitle": {
-            f"{str(tl_count)} Term Loans · {str(deb_count)} Debentures"
-        },
+        "subtitle": f"{tl_count} Term Loans · {deb_count} Debentures",
         "footer": f"{len(proposal_set)} Unique Proposals"
       },
       "Average_Sanction": {
