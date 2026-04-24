@@ -13305,7 +13305,7 @@ async function getInsightsContext(sessionId, token) {
       },
     }
   );
-
+  console.log("Check");
   const result = res.data || sampleJson;
 
   return result;

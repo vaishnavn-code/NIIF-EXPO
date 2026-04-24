@@ -496,8 +496,8 @@ export default function Overview({ data }) {
           <div className="ai-panel-brand">
             <div className="ai-panel-icon">✦</div>
             <div className="ai-panel-title-block">
-              <div className="ai-panel-title">AI Portfolio Insights</div>
-              <div className="ai-panel-subtitle">Powered by Insights API</div>
+              <div className="ai-panel-title">Exposure Insights</div>
+              <div className="ai-panel-subtitle">Powered by Treasury Intelligence</div>
             </div>
           </div>
           <button
