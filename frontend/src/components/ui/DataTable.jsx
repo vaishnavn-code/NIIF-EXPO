@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import React from 'react'
 
 /**
  * DataTable — sortable, paginated table driven entirely by props.

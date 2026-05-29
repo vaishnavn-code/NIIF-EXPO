@@ -1,5 +1,7 @@
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { CHART_PALETTE } from '../../utils/constants'
+import React from 'react'
+import { buildUnifiedTooltip } from './ChartTooltip'
 
 export default function DonutChart({
   data,           // Array<{ name, value }>
@@ -30,14 +32,10 @@ export default function DonutChart({
           ))}
         </Pie>
         <Tooltip
-          contentStyle={{
-            background: 'var(--white)',
-            border: '1px solid var(--border2)',
-            borderRadius: 8,
-            fontSize: 11,
-            fontFamily: 'Inter',
-          }}
-          formatter={(v) => [formatter ? formatter(v) : v]}
+        cursor={{ fill: "transparent" }}
+          content={buildUnifiedTooltip({
+            valueFormatter: (value) => (formatter ? formatter(value) : value),
+          })}
         />
         {/* {showLegend && (
           <Legend

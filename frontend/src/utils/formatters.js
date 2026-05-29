@@ -9,8 +9,13 @@ export const fmt = {
     `₹${(v / 1e9).toFixed(decimals)} Bn`,
 
   /** ₹ 1,234.56 Cr  (raw value in INR) */
-  cr: (v, decimals = 2) =>
-    `₹${(v / 1e7).toFixed(decimals)} Cr`,
+ cr: (v) => {
+  const val = (v || 0) / 1e7;
+
+  return val < 1
+    ? `₹${val.toFixed(2)} Cr`   // show decimals for small values
+    : `₹${Math.round(val).toLocaleString("en-IN")} Cr`;
+},
 
   /** ₹ 1,234.56 Mn */
   mn: (v, decimals = 2) =>

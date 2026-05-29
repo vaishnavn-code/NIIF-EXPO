@@ -1,10 +1,12 @@
 /** Navigation pages — remove or add entries here to change the sidebar. */
 export const NAV_PAGES = [
   { id: 'overview',     label: 'Overview',         section: 'Navigation' },
-  { id: 'exposure',     label: 'Exposure',          section: 'Navigation' },
+  { id: 'exposure',     label: 'Exposure Analysis',          section: 'Navigation' },
+  // { id: 'loans', label: 'Loan Portfolio',      section: 'Data Views' },
   { id: 'rates',        label: 'Interest & Rates',  section: 'Data Views' },
-  { id: 'borrowers',    label: 'Borrowers',         section: 'Data Views' },
-  { id: 'transactions', label: 'Transactions',      section: 'Data Views' },
+  { id: 'borrowers',    label: 'Borrower Views',         section: 'Data Views' },
+  { id: 'transactions', label: 'Transactions',      section: '' },
+
 ]
 
 /** Recharts color palette */

@@ -1,13 +1,42 @@
+import React from "react";
+
 export default function DonutLegend({
   data = [],
   colors = [],
   showPercent = true,
   showValue = false,
+  valueFormatter,
 }) {
   const total = data.reduce((sum, i) => sum + (i.value || 0), 0);
 
   const getPercent = (val) =>
     total ? ((val / total) * 100).toFixed(1) + "%" : "0%";
+
+  const getValue = (val) =>
+    valueFormatter ? valueFormatter(val || 0) : String(val || 0);
+
+  const renderStats = (item) => {
+    if (showValue && showPercent) {
+      return (
+        <strong style={{ marginLeft: "6px" }}>
+          {getValue(item.value)}
+          <span style={{ marginLeft: "10px" }}>
+            ({getPercent(item.value)})
+          </span>
+        </strong>
+      );
+    }
+
+    if (showValue) {
+      return <strong style={{ marginLeft: "6px" }}>{getValue(item.value)}</strong>;
+    }
+
+    if (showPercent) {
+      return <strong style={{ marginLeft: "6px" }}>{getPercent(item.value)}</strong>;
+    }
+
+    return null;
+  };
 
   return (
     <div style={{ marginTop: "12px", fontSize: "12px" }}>
@@ -31,9 +60,7 @@ export default function DonutLegend({
               }}
             />
             {data[0].name}
-            <strong style={{ marginLeft: "6px" }}>
-              {getPercent(data[0].value)}
-            </strong>
+            {renderStats(data[0])}
           </div>
         )}
 
@@ -49,9 +76,7 @@ export default function DonutLegend({
               }}
             />
             {data[1].name}
-            <strong style={{ marginLeft: "6px" }}>
-              {getPercent(data[1].value)}
-            </strong>
+            {renderStats(data[1])}
           </div>
         )}
       </div>
@@ -76,9 +101,7 @@ export default function DonutLegend({
             }}
           />
           {item.name}
-          <strong style={{ marginLeft: "6px" }}>
-            {getPercent(item.value)}
-          </strong>
+          {renderStats(item)}
         </div>
       ))}
     </div>

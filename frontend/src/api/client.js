@@ -1,9 +1,11 @@
 import axios from 'axios'
-import dashboardSeed from '../data/dashboardSeed.json'
+// import dashboardSeed from '../data/dashboardSeed.json'
 
 const api = axios.create({
-  baseURL: 'http://127.0.0.1:8001',
-  timeout: 15000,
+  // baseURL: 'https://sap-cloud-analytics-aah0gbcrf3ckgefc.centralindia-01.azurewebsites.net/',
+  baseURL: 'http://127.0.0.1:8004',
+  // Use a safer default for heavier backend computations.
+  timeout: 90000,
   headers: { 'Content-Type': 'application/json' },
 })
 
@@ -45,7 +47,10 @@ async function getDevToken() {
   const sapUser = 'dev_user'
   const timestamp = Math.floor(Date.now() / 1000)
   const message = `${sapSid}${sapClient}${timestamp}`
-  const sharedSecret = 'CHANGE_ME_IN_PRODUCTION'
+  // const sharedSecret = 'CHANGE_ME_IN_PRODUCTION'
+  const sharedSecret = '658ebbd2998e6e43dee75b64d23dc3f075a8a1bdfc08fa5fb85eba457e8782b6'
+  // const sharedSecret = Environment.GetEnvironmentVariable("sharedSecret")
+  // console.log("Using shared secret:", sharedSecret);
 
   const hmac_sig = await computeHmacSha256(sharedSecret, message)
 
@@ -60,32 +65,29 @@ async function getDevToken() {
 
 export const dashboardApi = {
   getDashboard: async () => {
-    const tokenResponse = await getDevToken()
-    const accessToken = tokenResponse.access_token
+    const params = new URLSearchParams(window.location.search);
+
+    const sessionId = params.get("session_id");
+    const token = params.get("token");
+
+    if (!sessionId || !token) {
+      throw new Error("Missing session_id or token in URL");
+    }
 
     return api.post(
-      '/data/query',
+      "/data/query",
       {
-        query_type: 'cof_dashboard',
-        raw_data: dashboardSeed,
+        "query_type": "cof_dashboard",
+        session_id: sessionId,
+        
       },
       {
         headers: {
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${token}`,
         },
       }
-    )
+    );
   },
-
-  // getGroups: (params = {}) => api.get('/groups', { params }),
-
-  // getCustomers: (params = {}) => api.get('/customers', { params }),
-
-  // getTransactions: (params = {}) => api.get('/transactions', { params }),
-
-  // getInsightsContext: () => api.get('/insights/context'),
-
-  // generateInsights: (context) => api.post('/insights', { context }),
-}
+};
 
 export default api

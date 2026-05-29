@@ -1,117 +1,216 @@
-import { useState, useCallback, useMemo } from 'react'
-import { HorizontalBar } from '../components/charts/BarCharts'
-import DataTable from '../components/ui/DataTable'
-import { TopNSelector } from '../components/ui/helpers'
-import { usePaginatedData } from '../hooks/useDashboardData'
-import { dashboardApi } from '../api/client'
-import { fmt } from '../utils/formatters'
-import { TOP_N_OPTIONS } from '../utils/constants'
+import React, { useState, useMemo } from "react";
+import { HorizontalBar, VerticalBar } from "../components/charts/BarCharts";
+import DataTable from "../components/ui/DataTable";
+import { TopNSelector } from "../components/ui/helpers";
+import { fmt } from "../utils/formatters";
+import { TOP_N_OPTIONS } from "../utils/constants";
 
 const COLUMNS = [
-  { key: 'customer_name',      label: 'Customer' },
-  { key: 'group_name',         label: 'Group',                render: (v) => <span className="spill grey">{v}</span> },
-  { key: 'loan_count',         label: 'Loans' },
-  { key: 'sanction_amt',       label: 'Sanction (₹ Mn)',     render: (v) => fmt.mn(v) },
-  { key: 'outstanding_amt',    label: 'Outstanding (₹ Mn)',  render: (v) => <strong>{fmt.mn(v)}</strong> },
-  { key: 'exposure_amt',       label: 'Exposure (₹ Mn)',     render: (v) => fmt.mn(v) },
-  { key: 'principal_received', label: 'Princ Recv (₹ Mn)',   render: (v) => fmt.mn(v) },
-  { key: 'interest_received',  label: 'Int Recv (₹ Mn)',     render: (v) => fmt.mn(v) },
-  { key: 'avg_rate',           label: 'Avg Rate',            render: (v) => <span className="spill purple">{v}%</span> },
-]
+  { key: "customer", label: "Customer" },
 
-export default function Borrowers({ computed: c }) {
-  const [topN, setTopN] = useState({ outstanding: 15, sanction: 15 })
-  const [search, setSearch] = useState('')
+  {
+    key: "group",
+    label: "Group",
+    render: (v) => <span className="spill grey">{v}</span>,
+  },
 
-  // Paginated table
-  const tableFetcher = useCallback((p) => dashboardApi.getCustomers(p), [])
-  const { rows, total, totalPages, loading, params, updateParams } =
-    usePaginatedData(tableFetcher, { sort_by: 'outstanding_amt', sort_dir: 'desc' })
+  {
+    key: "sanction_amt",
+    label: "Sanction (₹ Cr)",
+    render: (v) => fmt.cr(v),
+  },
 
-  // All customers for charts (top 20 max)
-  const chartFetcher = useCallback((p) => dashboardApi.getCustomers({ ...p, per_page: 20 }), [])
-  const { rows: allCust } = usePaginatedData(chartFetcher, { sort_by: 'outstanding_amt', sort_dir: 'desc' })
-  const { rows: sancCust } = usePaginatedData(
-    useCallback((p) => dashboardApi.getCustomers({ ...p, per_page: 20, sort_by: 'sanction_amt', sort_dir: 'desc' }), []),
-    {}
-  )
+  {
+    key: "outstanding",
+    label: "Outstanding (₹ Cr)",
+    render: (v) => (
+      <span style={{ fontWeight: 700, color: "#2E6090" }}>
+        {fmt.cr(v)}
+      </span>
+    ),
+  },
 
-  const osData = useMemo(() =>
-    allCust.slice(0, topN.outstanding).map((c) => ({
-      name: c.customer_name,
-      value: parseFloat((c.outstanding_amt / 1e9).toFixed(2)),
-    })), [allCust, topN.outstanding])
+  {
+    key: "exposure",
+    label: "Exposure (₹ Cr)",
+    render: (v) => fmt.cr(v),
+  },
 
-  const sancData = useMemo(() =>
-    sancCust.slice(0, topN.sanction).map((c) => ({
-      name: c.customer_name,
-      value: parseFloat((c.sanction_amt / 1e9).toFixed(2)),
-    })), [sancCust, topN.sanction])
+  {
+    key: "princ_recv",
+    label: "Princ Recv (₹ Cr)",
+    render: (v) => fmt.cr(v),
+  },
 
-  const handleSearch = (e) => {
-    setSearch(e.target.value)
-    updateParams({ search: e.target.value, page: 1 })
-  }
-  const handleSort = (key) => {
-    const dir = params.sort_by === key && params.sort_dir === 'desc' ? 'asc' : 'desc'
-    updateParams({ sort_by: key, sort_dir: dir })
-  }
+  {
+    key: "int_recv",
+    label: "Int Recv (₹ Cr)",
+    render: (v) => fmt.cr(v),
+  },
+
+  {
+    key: "avg_rate",
+    label: "Avg Rate",
+    render: (v) => (
+      <span
+        style={{
+          background: "rgba(123,31,162,0.08)",
+          color: "#7b1fa2",
+          padding: "3px 8px",
+          borderRadius: "10px",
+          fontWeight: 600,
+          fontSize: "11px",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "6px",
+        }}
+      >
+        <span
+          style={{
+            width: "6px",
+            height: "6px",
+            borderRadius: "50%",
+            background: "#7b1fa2",
+          }}
+        />
+        {v}%
+      </span>
+    ),
+  },
+];
+
+export default function Borrowers({ data }) {
+  const [page, setPage] = useState(1);
+const PER_PAGE = 25;
+  const [topN, setTopN] = useState({ outstanding: 15, sanction: 15 });
+
+  const borrowersTable = data?.borrowers?.table || [];
+
+  // 🔹 Derived metrics
+  const uniqueCustomers = borrowersTable.length;
+
+  const uniqueGroups = new Set(borrowersTable.map((b) => b.group)).size;
+
+  const topCustomer = borrowersTable.reduce(
+    (max, b) => (b.outstanding > max ? b.outstanding : max),
+    0
+  );
+
+  const avgRate =
+    borrowersTable.reduce((sum, b) => sum + (b.avg_rate || 0), 0) /
+    (borrowersTable.length || 1);
+
+  // 🔹 Charts
+  const osData = borrowersTable
+    .slice()
+    .sort((a, b) => b.outstanding - a.outstanding)
+    .slice(0, topN.outstanding)
+    .map((c) => ({
+      name: c.customer,
+      value: c.outstanding
+    }));
+
+  const sancData = borrowersTable
+    .slice()
+    .sort((a, b) => b.sanction_amt - a.sanction_amt)
+    .slice(0, topN.sanction)
+    .map((c) => ({
+      name: c.customer,
+      value: c.sanction_amt
+    }));
+
+    const paginatedRows = useMemo(() => {
+  const start = (page - 1) * PER_PAGE;
+  return borrowersTable.slice(start, start + PER_PAGE);
+}, [borrowersTable, page]);
+
+
+const totalPages = Math.ceil(borrowersTable.length / PER_PAGE);
 
   return (
     <div>
       <div className="section-label">Borrower / Customer View</div>
 
+      {/* CHARTS */}
       <div className="two-col">
         <div className="chart-card">
-          <div className="chart-title">Top Customers by Outstanding</div>
+          <div className="chart-title">Top {topN.outstanding} Customers by Outstanding</div>
           <div className="chart-subtitle">₹ BILLIONS</div>
-          <TopNSelector options={TOP_N_OPTIONS} value={topN.outstanding} onChange={(n) => setTopN((p) => ({ ...p, outstanding: n }))} />
-          <HorizontalBar data={osData} dataKey="value" nameKey="name" color="var(--blue)" formatter={(v) => `₹${v}Bn`} />
+
+          <TopNSelector
+            options={TOP_N_OPTIONS}
+            value={topN.outstanding}
+            onChange={(n) =>
+              setTopN((p) => ({ ...p, outstanding: n }))
+            }
+          />
+
+          <VerticalBar
+            data={osData}
+            dataKey="value"
+            nameKey="name"
+            color="url(#intGrad)"
+            slantLabels={true}
+            isCurrency={true}
+            height={360}
+            formatter={(v) => `₹${(v / 1e7).toLocaleString("en-IN")} Cr`} 
+          />
         </div>
+
         <div className="chart-card">
-          <div className="chart-title">Top Customers by Sanction</div>
+          <div className="chart-title">Top {topN.sanction} Customers by Sanction</div>
           <div className="chart-subtitle">₹ BILLIONS</div>
-          <TopNSelector options={TOP_N_OPTIONS} value={topN.sanction} onChange={(n) => setTopN((p) => ({ ...p, sanction: n }))} />
-          <HorizontalBar data={sancData} dataKey="value" nameKey="name" color="var(--teal)" formatter={(v) => `₹${v}Bn`} />
+
+          <TopNSelector
+            options={TOP_N_OPTIONS}
+            value={topN.sanction}
+            onChange={(n) =>
+              setTopN((p) => ({ ...p, sanction: n }))
+            }
+          />
+
+          <VerticalBar
+            data={sancData}
+            dataKey="value"
+            nameKey="name"
+            color="url(#intGrad)"
+            slantLabels={true}
+            isCurrency={true}
+            height={360}
+            formatter={(v) => `₹${(v / 1e7).toLocaleString("en-IN")} Cr`} 
+          />
         </div>
       </div>
 
-      <div className="card">
+      {/* TABLE */}
+      <div className="card" data-pdf-section>
         <div className="card-title">
           Customer Exposure Register
-          <span className="card-badge">{c.unique_customers} CUSTOMERS</span>
+          <span className="card-badge">
+            {uniqueCustomers} CUSTOMERS
+          </span>
         </div>
+
         <div className="cio-note">
-          <strong>{c.unique_customers} unique customers</strong> across{' '}
-          <strong>{c.unique_groups} borrower groups</strong>. Top customer outstanding:{' '}
-          <strong>₹{c.top_customer_os_bn} Bn</strong>. Avg interest rate:{' '}
-          <strong>{fmt.pct(c.avg_rate)} p.a.</strong> All exposures: <strong>Standard Assets</strong>.
+          <strong>{uniqueCustomers} customers</strong> across{" "}
+          <strong>{uniqueGroups} groups</strong>. Top customer outstanding:{" "}
+          <strong>₹{(topCustomer / 1e9).toFixed(2)} Bn</strong>. Avg interest rate:{" "}
+          <strong>{avgRate.toFixed(1)}%</strong>.
         </div>
-        <div className="toolbar">
-          <input
-            className="toolbar-input"
-            placeholder="Search Customer or Group…"
-            value={search}
-            onChange={handleSearch}
-          />
-          <button className="toolbar-btn" onClick={() => { setSearch(''); updateParams({ search: '', page: 1 }) }}>
-            Clear
-          </button>
-          <span className="toolbar-count">{total.toLocaleString('en-IN')} customers</span>
-        </div>
+
         <DataTable
           columns={COLUMNS}
-          rows={rows}
-          total={total}
-          page={params.page}
+          rows={paginatedRows}
+          total={borrowersTable.length}
+          page={page}
           totalPages={totalPages}
-          onPage={(p) => updateParams({ page: p })}
-          sortBy={params.sort_by}
-          sortDir={params.sort_dir}
-          onSort={handleSort}
-          loading={loading}
+          onPage={(p) => setPage(Number(p))}
+          sortBy={null}
+          sortDir={null}
+          onSort={() => {}}
+          loading={false}
         />
       </div>
     </div>
-  )
+  );
 }

@@ -66,7 +66,7 @@ import json
 import jwt  # PyJWT
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, root_validator
 from datetime import datetime
 
 # ---------------------------------------------------------------------------
@@ -75,8 +75,12 @@ from datetime import datetime
 SECRET_KEY = os.getenv("SECRET_KEY",    "CHANGE_ME_IN_PRODUCTION")
 SHARED_SECRET = os.getenv("SHARED_SECRET", "CHANGE_ME_IN_PRODUCTION")
 
+# localhost
+# SECRET_KEY = "921a5f127bcce6a6e71a0f0027ae6fbc3614061bf18f9b37ec844ea168542ae6"
+# SHARED_SECRET = "658ebbd2998e6e43dee75b64d23dc3f075a8a1bdfc08fa5fb85eba457e8782b6"
+
 JWT_ALGORITHM = "HS256"
-JWT_EXPIRY_SECONDS = 900000 # 15 minutes
+JWT_EXPIRY_SECONDS = 900 # 15 minutes
 
 WHITELISTED_ENVIRONMENTS: dict[str, list[str]] = {
     "DEV": ["100", "200"],
@@ -89,17 +93,56 @@ WHITELISTED_ENVIRONMENTS: dict[str, list[str]] = {
 # Keyed by session_id (UUID). Each entry expires with the JWT (15 min).
 # In production: replace with Redis via azure-cache-for-redis or similar.
 # ---------------------------------------------------------------------------
-_SESSION_STORE: dict[str, dict] = {}
-_TOKEN_SESSION_MAP: dict[str, str] = {}  # Maps JWT jti to session_id for efficient cleanup on token expiry
+# _SESSION_STORE: dict[str, dict] = {}
+# _TOKEN_SESSION_MAP: dict[str, str] = {}  # Maps JWT jti to session_id for efficient cleanup on token expiry
+
+# def _purge_expired_sessions():
+#     """Remove sessions older than JWT_EXPIRY_SECONDS. Called on every write."""
+#     now = int(time.time())
+#     expired = [k for k, v in _SESSION_STORE.items() if v.get(
+#         "expires_at", 0) < now]
+#     for k in expired:
+#         del _SESSION_STORE[k]
+SESSION_DIR = os.getenv("SESSION_DIR", "/home/site/wwwroot/sessions")
+os.makedirs(SESSION_DIR, exist_ok=True)
+def _get_session_path(session_id: str) -> str:
+    return os.path.join(SESSION_DIR, f"{session_id}.json")
+
+
+def save_session(session_id: str, data: dict):
+    with open(_get_session_path(session_id), "w") as f:
+        json.dump(data, f)
+
+
+def load_session(session_id: str):
+    path = _get_session_path(session_id)
+    if not os.path.exists(path):
+        return None
+
+    with open(path, "r") as f:
+        return json.load(f)
+
+
+def delete_session(session_id: str):
+    path = _get_session_path(session_id)
+    if os.path.exists(path):
+        os.remove(path)
+
 
 def _purge_expired_sessions():
-    """Remove sessions older than JWT_EXPIRY_SECONDS. Called on every write."""
     now = int(time.time())
-    expired = [k for k, v in _SESSION_STORE.items() if v.get(
-        "expires_at", 0) < now]
-    for k in expired:
-        del _SESSION_STORE[k]
 
+    for file in os.listdir(SESSION_DIR):
+        path = os.path.join(SESSION_DIR, file)
+
+        try:
+            with open(path, "r") as f:
+                data = json.load(f)
+
+            if data.get("expires_at", 0) < now:
+                os.remove(path)
+        except:
+            continue
 
 # ---------------------------------------------------------------------------
 # App
@@ -133,9 +176,20 @@ class AuthRequest(BaseModel):
 
 
 class SessionCreateRequest(BaseModel):
-    raw_data:  list           # The SAP TRM rows from the bootstrapper
+    raw_data:  Optional[list] = None
+    rows:      Optional[list] = None
+    data:      Optional[list] = None
     dashboard: str = "cof_dashboard"
     filters:   dict = {}
+
+    @root_validator(pre=True)
+    def normalize_raw_data(cls, values):
+        if not values.get("raw_data"):
+            for key in ("rows", "data"):
+                if values.get(key):
+                    values["raw_data"] = values[key]
+                    break
+        return values
 
 
 class DataQueryRequest(BaseModel):
@@ -145,6 +199,17 @@ class DataQueryRequest(BaseModel):
     filters:    dict = {}
     # fallback: direct payload (local dev / testing)
     raw_data:   Optional[list] = None
+    rows:       Optional[list] = None
+    data:       Optional[list] = None
+
+    @root_validator(pre=True)
+    def normalize_raw_data(cls, values):
+        if not values.get("raw_data"):
+            for key in ("rows", "data"):
+                if values.get(key):
+                    values["raw_data"] = values[key]
+                    break
+        return values
 
 
 class CofDashboardRequest(BaseModel):
@@ -289,7 +354,9 @@ def get_token(req: AuthRequest):
     }
 
 REACT_APP_URL = "http://localhost:5173/"
- 
+# REACT_APP_URL = "https://green-hill-0732a7b00.2.azurestaticapps.net"
+
+
 @app.post("/session/create")
 def session_create(
     req: SessionCreateRequest,
@@ -300,46 +367,64 @@ def session_create(
 
     token = authorization.split(" ")[1]
 
-    existing_session_id = _TOKEN_SESSION_MAP.get(token)
+    # existing_session_id = _TOKEN_SESSION_MAP.get(token)
 
-    if existing_session_id:
-        session = _SESSION_STORE.get(existing_session_id)
+    # if existing_session_id:
+    #     session = _SESSION_STORE.get(existing_session_id)
 
-        if session and session["expires_at"] > int(time.time()):
-            session["raw_data"] = req.raw_data
-            session["dashboard"] = req.dashboard
-            session["filters"] = req.filters
+    #     if session and session["expires_at"] > int(time.time()):
+    #         session["raw_data"] = req.raw_data
+    #         session["dashboard"] = req.dashboard
+    #         session["filters"] = req.filters
 
-            frontend_url = (
-                f"{REACT_APP_URL}"
-                f"?token={token}"
-                f"&sid={claims['sap_sid']}"
-                f"&client={claims['sap_client']}"
-                f"&dashboard={req.dashboard}"
-                f"&session_id={existing_session_id}"
-            )
+    #         session["result"] = calculate_cof_dashboard(req.filters or {}, req.raw_data)
+    #         session["result_ai"] = calculate_cof_dashboard_insights(req.filters or {}, req.raw_data)
 
-            return {
-                "session_id": existing_session_id,
-                "frontend_url": frontend_url,
-                "row_count": len(req.raw_data),
-                "expires_in": session["expires_at"] - int(time.time()),
-                "reused": True   # optional flag
-            }
+    #         frontend_url = (
+    #             f"{REACT_APP_URL}"
+    #             f"?token={token}"
+    #             f"&sid={claims['sap_sid']}"
+    #             f"&client={claims['sap_client']}"
+    #             f"&dashboard={req.dashboard}"
+    #             f"&session_id={existing_session_id}"
+    #         )
+
+    #         return {
+    #             "session_id": existing_session_id,
+    #             "frontend_url": frontend_url,
+    #             "row_count": len(req.raw_data),
+    #             "expires_in": session["expires_at"] - int(time.time()),
+    #             "reused": True   # optional flag
+    #         }
 
     session_id = str(uuid.uuid4())
-
-    _SESSION_STORE[session_id] = {
+    computed_result = calculate_cof_dashboard(req.filters or {}, req.raw_data)
+    computed_result_ai = calculate_cof_dashboard_insights(req.filters or {}, req.raw_data)
+    # _SESSION_STORE[session_id] = {
+    #     "raw_data":   req.raw_data,
+    #     "dashboard":  req.dashboard,
+    #     "filters":    req.filters,
+    #     "result":     computed_result,
+    #     "result_ai":  computed_result_ai,
+    #     "sap_sid":    claims["sap_sid"],
+    #     "sap_user":   claims["sap_user"],
+    #     "created_at": int(time.time()),
+    #     "expires_at": claims["exp"],
+    # }
+    session_data = {
         "raw_data":   req.raw_data,
         "dashboard":  req.dashboard,
         "filters":    req.filters,
+        "result":     computed_result,
+        "result_ai":  computed_result_ai,
         "sap_sid":    claims["sap_sid"],
         "sap_user":   claims["sap_user"],
         "created_at": int(time.time()),
         "expires_at": claims["exp"],
     }
 
-    _TOKEN_SESSION_MAP[token] = session_id
+    save_session(session_id, session_data)
+    # _TOKEN_SESSION_MAP[token] = session_id
 
     frontend_url = (
         f"{REACT_APP_URL}"
@@ -368,35 +453,56 @@ def data_query(
     resolved_raw_data = None
 
     if req.session_id:
-        session = _SESSION_STORE.get(req.session_id)
+        session = load_session(req.session_id)
         if not session:
             raise HTTPException(status_code=404, detail="Session expired")
-        resolved_raw_data = session.get("raw_data")
 
-    elif req.raw_data:
-        resolved_raw_data = req.raw_data
+        result = session.get("result")
 
-    if not resolved_raw_data:
+        if not result:
+            raise HTTPException(status_code=500, detail="Result not found in session")
+
+    else:
         raise HTTPException(
             status_code=400,
-            detail="No data provided",
+            detail="Session ID required",
         )
 
-    # Calculate
-    result = calculate_cof_dashboard(req.filters or {}, resolved_raw_data)
-
+    
     token = authorization.split(" ", 1)[1] if authorization and authorization.startswith("Bearer ") else ""
 
-    frontend_url = (
-        f"{REACT_APP_URL}"
-        f"?token={token}"
-        f"&sid={claims.get('sap_sid', '')}"
-        f"&client={claims.get('sap_client', '')}"
-        f"&dashboard=cof_dashboard"
+    result["session_id"] = None
 
-    )
+    return result
 
-    result["frontend_url"] = frontend_url
+@app.post("/data/query/ai")
+def data_query_ai(
+    req: DataQueryRequest,
+    authorization: Optional[str] = Header(None),
+):
+    claims = decode_jwt(authorization)
+
+    resolved_raw_data = None
+
+    if req.session_id:
+        session = load_session(req.session_id)
+        if not session:
+            raise HTTPException(status_code=404, detail="Session expired")
+
+        result = session.get("result_ai")
+
+        if not result:
+            raise HTTPException(status_code=500, detail="Result not found in session")
+
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Session ID required",
+        )
+
+    
+    token = authorization.split(" ", 1)[1] if authorization and authorization.startswith("Bearer ") else ""
+
     result["session_id"] = None
 
     return result
@@ -491,6 +597,518 @@ def _norm_date(value: Any) -> str:
 
 
 def calculate_cof_dashboard(filters: dict, raw_data=None):
+    """
+    COF calculation — aggregates raw rows into the new structured format
+    """
+    rows = _extract_cof_rows(raw_data)
+    rows = _require_cof_rows(rows)
+    today = datetime.today()
+    total_remaining_days = 0
+    remaining_count = 0
+    # Initialize aggregations
+    total_sanction = 0.0
+    total_os_amt = 0.0
+    total_prin_rec = 0.0
+    total_exposure = 0.0
+    total_int_rec = 0.0
+    total_upcoming_int = 0.0
+    total_interest_rate = 0.0
+    min_interest_rate = float("inf")
+    max_interest_rate = float("-inf")
+    min_sanc_amt = float("inf")
+    max_sanc_amt = float("-inf")
+    total_int_due = 0.0
+    tl_os_amt = 0.0
+    deb_os_amt = 0.0
+    total_sanction_2026 = 0.0
+    customer_set = set()
+    disb_set = set()
+    fy_2026_disb_set = set()
+    bp_summary_map = {}
+    product_counts = {}
+    proposal_set = set()
+    tenor_buckets = {"0-5 Years": set(),"5-10 Years": set(),"10-15 Years": set(),"15-20 Years": set(),"20-25 Years": set(),"25-30 Years": set(),">30 Years": set()}    
+    rate_buckets = {"<7 %": 0, "7-9 %": 0, "9-12 %": 0, ">12 %": 0}
+    rate_buckets_disb = {"<7%": set(), "7-8%": set(), "8-8.5%": set(), "8.5-9%": set(), "9-9.5%": set(), "9.5-10%": set(),">10%": set()}
+    sanction_buckets_disb = {
+        "<50 Cr": set(),
+        "50-250 Cr": set(),
+        "250-500 Cr": set(),
+        "500-1000 Cr": set(),
+        ">1000 Cr": set()
+    }
+    disbursements_activity = {}
+    disbursements_by_year = {}
+    disbursments_by_quarter = {}
+    transaction_table = []
+    exposure_table = []
+    customer_table = []
+
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+
+        # Basic amounts
+        sanction_amt = _to_float(row.get("Sanc Amt"))
+        os_amt = _to_float(row.get("O/S Amt"))
+        prin_rec = _to_float(row.get("Principal Received"))
+        exp_amt = _to_float(row.get("Exp Amt"))
+        int_rec = _to_float(row.get("Interest Received"))
+        interest_rate = _to_float(row.get("Int Rate"))
+        loan_amt = _to_float(row.get("Loan Amt"))
+        upcoming_int = _to_float(row.get("Upcoming Int"))
+        interest_due = _to_float(row.get("Interest Due"))
+        end_date_str = format_date_yyyy_mm_dd(row.get("End Date"))
+        tenor_yrs = 0
+        # Totals
+        total_sanction += sanction_amt
+        total_os_amt += os_amt
+        total_prin_rec += prin_rec
+        total_exposure += exp_amt
+        total_int_rec += int_rec
+        total_upcoming_int += upcoming_int
+        total_int_due += interest_due
+        if interest_rate > 0:  
+            min_interest_rate = min(min_interest_rate, interest_rate)
+            max_interest_rate = max(max_interest_rate, interest_rate)
+        if sanction_amt > 0:  
+            min_sanc_amt = min(min_sanc_amt, sanction_amt)
+            max_sanc_amt = max(max_sanc_amt, sanction_amt)    
+        total_interest_rate += interest_rate
+        # Customer and disbursement tracking
+        customer = str(row.get("Customer Name") or "")
+        customer_set.add(customer)
+        disb_no = str(row.get("Dis No") or "")
+        proposal_no = str(row.get("Proposal No") or "")
+        
+        # Disb No Count
+        if disb_no:
+            disb_set.add(disb_no)
+
+        # Proposal No count
+        if proposal_no:
+            proposal_set.add(proposal_no)
+
+        # BP Group summary
+        bp_group = str(row.get("BP Grp Name") or "Others")
+        if bp_group not in bp_summary_map:
+            bp_summary_map[bp_group] = {
+                "loan_count": 0,
+                "sanction_amt": 0.0,
+                "loan_amt": 0.0,
+                "outstanding_amt": 0.0,
+                "exposure_amt": 0.0,
+                "principle_recv": 0.0,
+                "int_recv": 0.0,
+                "upcoming_int": 0.0
+            }
+
+        bp_summary_map[bp_group]["loan_count"] += 1
+        bp_summary_map[bp_group]["sanction_amt"] += sanction_amt
+        bp_summary_map[bp_group]["loan_amt"] += _to_float(row.get("Loan Amt"))
+        bp_summary_map[bp_group]["outstanding_amt"] += os_amt
+        bp_summary_map[bp_group]["exposure_amt"] += exp_amt
+        bp_summary_map[bp_group]["principle_recv"] += prin_rec
+        bp_summary_map[bp_group]["int_recv"] += int_rec
+        bp_summary_map[bp_group]["upcoming_int"] += _to_float(row.get("Upcoming Int"))
+
+        # Product counts
+        prd_desc = str(row.get("Prd Type Desc") or "")
+        if prd_desc:
+            product_counts[prd_desc] = product_counts.get(prd_desc, 0) + 1
+        prd_desc_upper = prd_desc.upper()
+
+        if "TL" in prd_desc_upper:
+            tl_os_amt += os_amt
+        elif "DEB" in prd_desc_upper:
+            deb_os_amt += os_amt
+        # Rate distribution
+        if interest_rate < 7:
+            rate_buckets["<7 %"] += 1
+        elif interest_rate <= 9:
+            rate_buckets["7-9 %"] += 1
+        elif interest_rate <= 12:
+            rate_buckets["9-12 %"] += 1
+        else:
+            rate_buckets[">12 %"] += 1
+
+        # Rate buckets for disbursements
+        if disb_no:
+            if interest_rate < 7:
+                rate_buckets_disb["<7%"].add(disb_no)
+            elif interest_rate < 8:
+                rate_buckets_disb["7-8%"].add(disb_no)
+            elif interest_rate < 8.5:
+                rate_buckets_disb["8-8.5%"].add(disb_no)
+            elif interest_rate < 9:
+                rate_buckets_disb["8.5-9%"].add(disb_no)
+            elif interest_rate < 9.5:
+                rate_buckets_disb["9-9.5%"].add(disb_no)
+            elif interest_rate < 10:
+                rate_buckets_disb["9.5-10%"].add(disb_no)
+            else:
+                rate_buckets_disb[">10%"].add(disb_no)
+
+        rate_buckets_disb_counts = {
+            k: len(v) for k, v in rate_buckets_disb.items()
+        }
+        start_date = format_date_yyyy_mm_dd(row.get("Start Date"))
+
+        if start_date:
+            try:
+                date_obj = datetime.strptime(start_date, "%Y-%m-%d")
+
+                if date_obj.year == 2026:
+                    total_sanction_2026 += sanction_amt   
+                    if disb_no:
+                        fy_2026_disb_set.add(disb_no)
+                month_key = date_obj.strftime("%Y-%m-%d")
+                year_key = date_obj.strftime("%Y")
+                quarter = f"{date_obj.year}Q{(date_obj.month - 1)//3 + 1}"
+
+                if month_key not in disbursements_activity:
+                    disbursements_activity[month_key] = {
+                        "loan_count": 0,
+                        "sanction_amount": 0.0,
+                        "outstanding": 0.0,
+                        "Quater": f"{date_obj.year} Q{(date_obj.month-1)//3 + 1}",
+                        "Year": str(date_obj.year)
+                    } 
+                disbursements_activity[month_key]["loan_count"] += 1
+                disbursements_activity[month_key]["sanction_amount"] += sanction_amt
+                disbursements_activity[month_key]["outstanding"] += os_amt
+
+                if year_key not in disbursements_by_year:
+                    disbursements_by_year[year_key] = {
+                        "loan_count": 0,
+                        "sanction_amount": 0.0 
+                    }
+                disbursements_by_year[year_key]["loan_count"] += 1
+                disbursements_by_year[year_key]["sanction_amount"] += sanction_amt   
+                if quarter not in disbursments_by_quarter:
+                    disbursments_by_quarter[quarter] = {
+                        "loan_count": 0,
+                        "sanction_amount": 0.0
+                    }
+
+                disbursments_by_quarter[quarter]["loan_count"] += 1
+                disbursments_by_quarter[quarter]["sanction_amount"] += sanction_amt
+            except Exception as e:
+                print("Date parsing failed:", start_date, e)
+        if start_date and end_date_str:
+            try:
+                start_date_obj = datetime.strptime(start_date, "%Y-%m-%d")
+                end_date_obj = datetime.strptime(end_date_str, "%Y-%m-%d")
+
+                diff_days = (end_date_obj - start_date_obj).days
+                tenor_yrs = diff_days / 365
+
+                if tenor_yrs < 0:
+                    tenor_yrs = 0
+    
+            except Exception as e:
+                print("Tenor calculation failed:", e)
+
+        if end_date_str:
+            try:
+                end_date_obj = datetime.strptime(end_date_str, "%Y-%m-%d")
+
+                remaining_days = abs((end_date_obj - today).days)
+
+                total_remaining_days += remaining_days
+                remaining_count += 1
+            except Exception as e:
+                print("Remaining tenor calc failed:", e)
+
+       # Tenor distribution counts for disbursements
+        if disb_no:
+            if tenor_yrs <= 5:
+                tenor_buckets["0-5 Years"].add(disb_no)
+            elif tenor_yrs <= 10:
+                tenor_buckets["5-10 Years"].add(disb_no)
+            elif tenor_yrs <= 15:
+                tenor_buckets["10-15 Years"].add(disb_no)
+            elif tenor_yrs <= 20:
+                tenor_buckets["15-20 Years"].add(disb_no)
+            elif tenor_yrs <= 25:
+                tenor_buckets["20-25 Years"].add(disb_no)
+            elif tenor_yrs <= 30:
+                tenor_buckets["25-30 Years"].add(disb_no)
+            else:
+                tenor_buckets[">30 Years"].add(disb_no)
+        tenor_buckets_disb_counts = {
+            k: len(v) for k, v in tenor_buckets.items()
+        }
+        # Sanction amount buckets for disbursements
+        if disb_no:
+            amt_cr = sanction_amt / 1e7   # convert to Cr
+
+            if amt_cr < 50:
+                sanction_buckets_disb["<50 Cr"].add(disb_no)
+            elif amt_cr > 50 and amt_cr <= 250:
+                sanction_buckets_disb["50-250 Cr"].add(disb_no)
+            elif amt_cr > 250 and amt_cr <= 500:
+                sanction_buckets_disb["250-500 Cr"].add(disb_no)
+            elif amt_cr > 500 and amt_cr <= 1000:
+                sanction_buckets_disb["500-1000 Cr"].add(disb_no)
+            else:
+                sanction_buckets_disb[">1000 Cr"].add(disb_no)
+        sanction_buckets_disb_counts = {
+            k: len(v) for k, v in sanction_buckets_disb.items()
+        }
+        # Transaction table
+        transaction_table.append({
+            "proposal_id": str(row.get("Sanction No") or ""),
+            "customer": customer,
+            "group": bp_group,
+            "product": prd_desc,
+            "start_date": str(row.get("Start Date") or ""),
+            "end_date": str(row.get("End Date") or ""),
+            "tenor": _to_float(row.get("Tenor Yrs")),
+            "sanction_amt": sanction_amt,
+            "loan_amt": loan_amt,
+            "outstanding_amt": os_amt,
+            "exposure_amt": exp_amt,
+            "rate": interest_rate,
+            "princ_recv": prin_rec,
+            "int_recv": int_rec,
+            "upcoming_int": _to_float(row.get("Upcoming Int")),
+            "asset_class": str(row.get("Asset Classification") or "Standard")
+        })
+        # Customer table
+        customer_table.append({
+            "customer": customer,
+            "group": bp_group,
+            "loan": "",
+            "sanction_amt": sanction_amt,
+            "outstanding":  os_amt,
+            "exposure": exp_amt,
+            "princ_recv": prin_rec,
+            "int_recv": int_rec,
+            "avg_rate": interest_rate
+        })
+    
+    avg_remaining_years = (
+    (total_remaining_days / remaining_count) / 365
+    if remaining_count else 0
+    )
+    # Average Interest Rate
+    avg_interest_rate = (total_interest_rate / len(rows)) if rows else 0
+    # Build exposure table
+    for bp_group, data in bp_summary_map.items():
+        exposure_table.append({
+            "bp_group": bp_group,
+            "loan_count": data["loan_count"],
+            "sanction_amt": round(data["sanction_amt"], 2),
+            "loan_amt": round(data["loan_amt"], 2),
+            "outstanding_amt": round(data["outstanding_amt"], 2),
+            "exposure_amt": round(data["exposure_amt"], 2),
+            "principle_recv": round(data["principle_recv"], 2),
+            "int_recv": round(data["int_recv"], 2),
+            "upcoming_int": round(data["upcoming_int"], 2)
+        })
+
+    # Sort exposure table by outstanding amount
+    exposure_table.sort(key=lambda x: x["outstanding_amt"], reverse=True)
+
+    # Build group outstanding & sanction chart
+    group_outstanding_sanction = []
+    for bp_group, data in bp_summary_map.items():
+        group_outstanding_sanction.append({
+            "bp_group": bp_group,
+            "outstanding": round(data["outstanding_amt"], 2),
+            "sanction": round(data["sanction_amt"], 2)
+        })
+    group_outstanding_sanction.sort(key=lambda x: x["outstanding"], reverse=True)
+    # Upcoming Interest by BP Group
+    upcoming_interest_by_group = dict(
+        sorted(
+            ((bp_group, round(data["upcoming_int"], 2)) for bp_group, data in bp_summary_map.items()),
+            key=lambda x: x[1],
+            reverse=True
+        )
+    )
+    # Sanction Amt & Principal Received by BP Group
+    combined_bp_data = [
+        {
+            "bp_group": bp_group,
+            "sanction": round(data["sanction_amt"], 2),
+            "principal": round(data["principle_recv"], 2)
+        }
+        for bp_group, data in bp_summary_map.items()
+    ]
+    combined_bp_data.sort(key=lambda x: x["sanction"], reverse=True)
+    # Product type counts
+    product_type_counts = {}
+    for prd, count in product_counts.items():
+        if "TL" in prd.upper():
+            product_type_counts["TL - Disbursements"] = product_type_counts.get("TL - Disbursements", 0) + count
+        elif "DEB" in prd.upper():
+            product_type_counts["DEB - Disbursements"] = product_type_counts.get("DEB - Disbursements", 0) + count
+
+    # Calculate TL and DEB counts
+    tl_count = sum(1 for row in rows if "TL" in str(row.get("Prd Type Desc", "")).upper())
+    deb_count = sum(1 for row in rows if "DEB" in str(row.get("Prd Type Desc", "")).upper())
+
+    disb_ratio_2026 = (
+    (len(fy_2026_disb_set) / len(disb_set)) * 100
+    if disb_set else 0
+    )
+
+    # Build the new response format
+    response = {
+        "overview": {
+            "kpi": {
+                "Total_Sanction": {
+                    "Title": f"₹{round(total_sanction / 10000000):,} Cr",
+                    "Subtitle": f"{str(len(rows))} loan records · {len(proposal_set)} proposals",
+                    "Footer": f"{str(len(bp_summary_map))} Borrower Groups · {len(customer_set)} Customers"
+                },
+                "Outstanding_Amount": {
+                    "Title": f"₹{round(total_os_amt / 10000000):,} Cr",
+                    "Subtitle": f"Disbursed: ₹{total_exposure / 10000000:,.0f} Cr  total",
+                    "Footer": f"Principal Received: ₹{total_prin_rec / 10000000:,.0f} Cr"
+                },
+                "Total_Exposure": {
+                    "Title": f"₹{round(total_exposure / 10000000):,} Cr",
+                    "Subtitle": f"Interest Due: ₹{total_int_due/10000000:,.0f} Cr accrued",
+                    "Footer": f"Upcoming Interest: ₹{total_upcoming_int/10000000:,.0f} Cr"
+                },
+               "Avg_IntRate": {
+                    "Title": f"{avg_interest_rate:.2f} %",
+                    "Subtitle": f"Range: {min_interest_rate:.2f}% - {max_interest_rate:.2f}% pa",
+                    "Footer": f"Avg Tenor: {avg_remaining_years:.2f} years"
+                }
+            },
+            "charts": {
+                "Group by Outstanding & Sanction": {
+                    "values": group_outstanding_sanction
+                },
+                "Product Type": {
+                    "values": product_type_counts
+                },
+                "Tenor Distribution": {
+                    "values": tenor_buckets_disb_counts
+                },
+                "Rate Distribution": {
+                    "values": rate_buckets_disb_counts
+                },
+                "Collections Overview": {
+                    "values": {
+                        "Principal Recieved": round(total_prin_rec, 2),
+                        "Interest Recieved": round(total_int_rec, 2),
+                        "Outstanding Remaining": round(total_os_amt, 2)
+                    }
+                },
+                "Disbursements Activity": {
+                    "values": disbursements_activity
+                }
+            }
+        },
+        "exposure": {
+            "kpi": {
+                "Total_Records": {
+                    "Title": str(len(rows)),
+                    "Subtitle": "Total Records",
+                    "Footer": "Disbursement Entries"
+                },
+                "Borrower_Groups": {
+                    "Title": str(len(bp_summary_map)),
+                    "Subtitle": "Borrower Groups",
+                    "Footer": "Active Group Entities"
+                },
+                "TL_Disbursements": {
+                    "Title": str(tl_count),
+                    "Subtitle": "TL Disbursements",
+                    "Footer": f"Term Loans · ₹{tl_os_amt / 10000000:,.0f} Cr O/S"
+                },
+                "DEB_Disbursements": {
+                    "Title": str(deb_count),
+                    "Subtitle": "DEB Disbursements",
+                    "Footer": f"Debentures · ₹{deb_os_amt / 10000000:,.0f} Bn O/S"
+                }
+            },
+            "table": exposure_table
+        },
+        "loan_portfolio": {
+            "table": transaction_table
+        },
+        "interest_rates": {
+            "charts":{
+                "Interest Rate Distribution": {
+                    "values": rate_buckets_disb_counts
+                },
+                "Tenor Profile": {
+                    "values": tenor_buckets_disb_counts
+                },
+                "Interest Recieved vs Due": {
+                    "values": {
+                        "Interest Due": total_int_due,
+                        "Interest Recieved": total_int_rec,
+                        "Principal Recieved": total_prin_rec,
+                        "Upcoming Interest": total_upcoming_int
+                    }
+                },
+                "Upcoming Interest": {
+                    "values": upcoming_interest_by_group
+                }
+            }
+        },
+        "borrowers": {
+            "table" : customer_table
+        },
+        "transactions":{
+        "kpi": {
+      "Total_Transactions": {
+        "title": str(len(disb_set)),
+        "subtitle": f"{tl_count} Term Loans · {deb_count} Debentures",
+        "footer": f"{len(proposal_set)} Unique Proposals"
+      },
+      "Average_Sanction": {
+        "title": str(round(total_sanction / len(disb_set), 2)) if disb_set else "0",
+        "subtitle": f"Max: ₹{round(max_sanc_amt / 1e9, 2)} Bn · Min: ₹{round(min_sanc_amt / 1e6, 2)} Mn",
+        "footer": f"Avg tenor: {avg_remaining_years:.2f} yrs"
+
+      },
+      "Principal_Recieved": {
+        "title": f"{total_prin_rec:,.0f}",
+        "subtitle": f"{((total_prin_rec / total_sanction) * 100):.2f}% of total sanctioned" if total_sanction else "0.00% of total sanctioned",
+        "footer": f"Interest Received: ₹{total_int_rec / 1e9:.2f} Bn"
+      },
+      "Current_FY_Disb": {
+        "title": str(len(fy_2026_disb_set)),
+        "subtitle": f"{total_sanction_2026/1e7:,.0f} Cr sanctioned (2026)",
+        "footer": f"{disb_ratio_2026:.2f}% of total portfolio by count"
+      }
+    },
+    "charts": {
+        "Disbursments by Year": {
+            "values": disbursements_by_year
+        },
+        "Loan Size Distribution": {
+            "values": sanction_buckets_disb_counts
+      },
+      "Quaterly Sanction Volume": {
+        "values": disbursments_by_quarter
+      },
+        "Groups_Sacntion_princ": {
+            "values": combined_bp_data 
+        },
+        "Product Type":{
+            "values": product_type_counts
+        },
+        "Rate_Band_Split": {
+            "values": rate_buckets_disb_counts
+        },
+    },
+            "table": transaction_table
+        }
+    }    
+
+    return response
+
+# old response --------------------
+def calculate_cof_dashboard_insights(filters: dict, raw_data=None):
     """
     COF calculation — aggregates raw rows into the render_state shape
     expected by cofDashboardEngine.js (products, lenders, maturity, transactions, totals).
@@ -639,6 +1257,9 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
             "sanction_amt": 0.0,
             "interest_due": 0.0,
             "exposure_amt": 0.0,
+            "loan_amt": 0.0,
+            "interest_rec": 0.0,
+            "princ_rec": 0.0,
             "disb_set": set()  
 
         }
@@ -647,7 +1268,9 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
         bp_summary_map[bp_group]["sanction_amt"] += sanction_amt
         bp_summary_map[bp_group]["interest_due"] += interest_due
         bp_summary_map[bp_group]["exposure_amt"] += exp_amt
-
+        bp_summary_map[bp_group]["loan_amt"] += loan_amt
+        bp_summary_map[bp_group]["interest_rec"] += int_rate
+        bp_summary_map[bp_group]["princ_rec"] += princ_rec
         all_prd_types.add(ptype)
 
         if bp_group not in bp_product_map:
@@ -848,6 +1471,9 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
                 "interest_due": round(vals["interest_due"], 2),
                 "exposure_amt": round(vals["exposure_amt"], 2),
                 "disb_count": len(vals["disb_set"]), 
+                "loan_amt": round(vals["loan_amt"], 2),
+                "interest_rec": round(vals["interest_rec"], 2),
+                "princ_rec": round(vals["princ_rec"], 2),
                 "products": [
                     {
                         "prd_type": prd,
@@ -1037,8 +1663,6 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
     }
 
     return {
-        "query_type": "cof_dashboard",
-        "render_state": {
             "products":     products,
             # "lenders":      lenders,
             "maturity":     maturity_map,
@@ -1054,8 +1678,6 @@ def calculate_cof_dashboard(filters: dict, raw_data=None):
             "txnTypeSummary": txn_type_summary,
             "topDisbByOs": top_disb_os,
             "currencySummary": currency_summary,
-        },
-
         "row_count": len(rows),
         "filters":   filters or {},
     }

@@ -5,12 +5,11 @@ import DonutChart from "../components/charts/DonutChart";
 import {
   VerticalBar,
   GroupedBar,
-  VerticalBarWithLine,
+  VerticalBarWithLineOverview,
 } from "../components/charts/BarCharts";
-import { Spinner, ErrorMsg } from "../components/ui/helpers";
 import { useInsights } from "../hooks/useDashboardData";
-import { fmt } from "../utils/formatters";
 import DonutLegend from "../components/charts/DonutLegend";
+import React from "react";
 
 export default function Overview({ data }) {
   const {
@@ -48,12 +47,65 @@ export default function Overview({ data }) {
   // }
   const [topN, setTopN] = useState(15);
   const [viewMode, setViewMode] = useState("monthly");
+  const [selectedYear, setSelectedYear] = useState("All");
 
+  const hardcodedInsightTags = [
+    "CONCENTRATION RISK",
+    "ASSET QUALITY",
+    "MATURITY PROFILE",
+    "UTILIZATION",
+    "CURRENCY RISK",
+  ];
   const kpi = data?.overview?.kpi || {};
+  const insightItems = useMemo(() => {
+    if (Array.isArray(insights?.insights)) return insights.insights;
+    if (Array.isArray(insights)) return insights;
+    if (!insights || typeof insights !== "object") return [];
+
+    return [
+      insights.headline
+        ? {
+            insight: insights.headline,
+            reasoning: [],
+            evidence: [],
+            tag: "Headline",
+          }
+        : null,
+      insights.risk_flag
+        ? {
+            insight: insights.risk_flag,
+            reasoning: [],
+            evidence: [],
+            tag: "Risk",
+          }
+        : null,
+      insights.opportunity
+        ? {
+            insight: insights.opportunity,
+            reasoning: [],
+            evidence: [],
+            tag: "Opportunity",
+          }
+        : null,
+      insights.watchlist
+        ? {
+            insight: insights.watchlist,
+            reasoning: [],
+            evidence: [],
+            tag: "Watchlist",
+          }
+        : null,
+    ].filter(Boolean);
+  }, [insights]);
+
+  const insightSummary = insightItems[0]?.insight || "";
+  const insightCount = insightItems.length;
+  const insightModel =
+    insights?.llm?.model || insights?.model || "AI-generated";
+  const ragEnabled = Boolean(insights?.meta?.rag?.enabled);
+
   const productDonut = useMemo(() => {
-    const productChart = data?.overview?.charts?.find(
-      (c) => c.title === "Product type",
-    );
+    const productChart = data?.overview?.charts?.["Product Type"];
 
     if (!productChart) return [];
 
@@ -64,9 +116,7 @@ export default function Overview({ data }) {
   }, [data]);
 
   const tenorChartData = useMemo(() => {
-    const tenorChart = data?.overview?.charts?.find(
-      (c) => c.title === "Tenor Distribution",
-    );
+    const tenorChart = data?.overview?.charts?.["Tenor Distribution"];
 
     if (!tenorChart) return [];
 
@@ -77,9 +127,7 @@ export default function Overview({ data }) {
   }, [data]);
 
   const rateChartData = useMemo(() => {
-    const rateChart = data?.overview?.charts?.find(
-      (c) => c.title === "Rate Distribution",
-    );
+    const rateChart = data?.overview?.charts?.["Rate Distribution"];
 
     if (!rateChart) return [];
 
@@ -90,9 +138,7 @@ export default function Overview({ data }) {
   }, [data]);
 
   const collectionDonut = useMemo(() => {
-    const collectionChart = data?.overview?.charts?.find(
-      (c) => c.title === "Collections Overview",
-    );
+    const collectionChart = data?.overview?.charts?.["Collections Overview"];
 
     if (!collectionChart) return [];
 
@@ -113,25 +159,23 @@ export default function Overview({ data }) {
   }, [data]);
 
   const topGroupsOutstanding = useMemo(() => {
-    const groupChart = data?.overview?.charts?.find(
-      (c) => c.title === "Group by Outsanding & Sanction",
-    );
+    const groupChart =
+      data?.overview?.charts?.["Group by Outstanding & Sanction"];
 
     if (!groupChart) return [];
 
     return groupChart.values
       .map((item) => ({
         label: item.bp_group,
-        count: parseFloat(item.outstanding || 0),
+        count: +(item.outstanding / 1e7).toFixed(2), // convert to Cr
       }))
       .sort((a, b) => b.count - a.count)
       .slice(0, topN);
   }, [data, topN]);
 
   const topGroupsDual = useMemo(() => {
-    const groupChart = data?.overview?.charts?.find(
-      (c) => c.title === "Group by Outsanding & Sanction",
-    );
+    const groupChart =
+      data?.overview?.charts?.["Group by Outstanding & Sanction"];
 
     if (!groupChart) return [];
 
@@ -146,56 +190,126 @@ export default function Overview({ data }) {
   }, [data]);
 
   const disbursementData = useMemo(() => {
-  const chart = data?.overview?.charts?.find(
-    (c) => c.title === "Disbursements Activity"
-  );
+    const chart = data?.overview?.charts?.["Disbursements Activity"];
 
-  if (!chart) return [];
+    if (!chart) return [];
 
-  const raw = Object.entries(chart.values).map(([date, val]) => ({
-    date,
-    label: date,
-    loan: +val.loan_count,
-    sanction: +val.sanction_amount,
-    outstanding: +val.outstanding,
-    quarter: val.Quater,
-    year: val.Year,
-  }));
-
-  // ✅ HANDLE AUTO
-  const mode = viewMode === "auto" ? "quarterly" : viewMode;
-
-  if (mode === "monthly") {
-    return raw.map((r) => ({
-      name: r.date,
-      loan: r.loan,
-      sanction: r.sanction,
-      outstanding: r.outstanding,
+    const raw = Object.entries(chart.values).map(([date, val]) => ({
+      date,
+      label: date,
+      loan: +val.loan_count,
+      sanction: +val.sanction_amount,
+      outstanding: +val.outstanding,
+      quarter: val.Quater || val.Quarter,
+      year: String(val.Year || ""),
     }));
-  }
 
-  const groupBy = (key) => {
-    const map = {};
-    raw.forEach((r) => {
-      const k = r[key];
+    const mode = viewMode === "auto" ? "quarterly" : viewMode;
 
-      if (!map[k]) {
-        map[k] = { name: k, loan: 0, sanction: 0, outstanding: 0 };
-      }
+    const filtered =
+      mode === "yearly" || selectedYear === "All"
+        ? raw
+        : raw.filter((r) => r.year === selectedYear);
 
-      map[k].loan += r.loan;
-      map[k].sanction += r.sanction;
-      map[k].outstanding += r.outstanding;
-    });
+    if (mode === "monthly") {
+      // Aggregate by YYYY-MM key so all entries within a month are summed
+      const monthMap = {};
+      filtered.forEach((r) => {
+        const monthKey = r.date.slice(0, 7); // "YYYY-MM"
+        if (!monthMap[monthKey]) {
+          monthMap[monthKey] = {
+            name: monthKey,
+            loan: 0,
+            sanction: 0,
+            outstanding: 0,
+          };
+        }
+        monthMap[monthKey].loan += r.loan;
+        monthMap[monthKey].sanction += r.sanction;
+        monthMap[monthKey].outstanding += r.outstanding;
+      });
 
-    return Object.values(map);
+      return Object.values(monthMap)
+        .sort((a, b) => new Date(b.name) - new Date(a.name))
+        .slice(0, 12)
+        .reverse();
+    }
+
+    const groupBy = (key) => {
+      const map = {};
+      filtered.forEach((r) => {
+        const k = r[key];
+
+        if (!k) return;
+
+        if (!map[k]) {
+          map[k] = {
+            name: `${k} - ${String(r.year).slice(-2)}`,
+            loan: 0,
+            sanction: 0,
+            outstanding: 0,
+          };
+        }
+
+        map[k].loan += r.loan;
+        map[k].sanction += r.sanction;
+        map[k].outstanding += r.outstanding;
+      });
+
+      return Object.values(map);
+    };
+
+    if (mode === "quarterly") {
+      // quarter key is like "2026 Q1", sort by year then quarter number
+      const parseQuarter = (name) => {
+        const [yr, q] = name.split(" ");
+        return parseInt(yr) * 10 + parseInt(q?.replace("Q", "") || 0);
+      };
+
+      return groupBy("quarter")
+        .sort((a, b) => parseQuarter(b.name) - parseQuarter(a.name))
+        .slice(0, 12)
+        .reverse();
+    }
+
+    if (mode === "yearly") {
+      return groupBy("year").sort((a, b) => Number(a.name) - Number(b.name));
+    }
+
+    return [];
+  }, [data, selectedYear, viewMode]);
+
+  const formatDisplay = (v) => {
+    if (!v) return "-";
+
+    const str = String(v);
+
+    // Extract number
+    const num = parseFloat(str.replace(/₹|,|Cr|%/gi, ""));
+
+    if (isNaN(num)) return v; // return original if not numeric
+
+    // Handle %
+    if (str.includes("%")) {
+      return `${num.toFixed(2)} %`;
+    }
+
+    // Handle Cr
+    if (str.toLowerCase().includes("cr")) {
+      return `₹${num.toLocaleString("en-IN")} Cr`;
+    }
+
+    return v;
   };
 
-  if (mode === "quarterly") return groupBy("quarter");
-  if (mode === "yearly") return groupBy("year");
-
-  return [];
-}, [data, viewMode]);
+  const disbursementTitle =
+    viewMode.charAt(0).toUpperCase() +
+    viewMode.slice(1) +
+    " Disbursement Activity";
+  const disbursementSubtitle =
+    viewMode === "yearly"
+      ? "YEARLY GROUPING • ALL YEARS"
+      : `${viewMode.toUpperCase()} GROUPING • ${selectedYear === "All" ? "ALL YEARS" : `YEAR ${selectedYear}`}`;
 
   // const rateSparkPct =
   //   c.max_rate > c.min_rate
@@ -267,7 +381,7 @@ export default function Overview({ data }) {
   return (
     <div>
       <div className="section-label">Portfolio KPIs — All Figures in INR</div>
-      <div className="four-col">
+      <div className="four-col" data-pdf-section>
         {/* <KpiCard
           label="Total Sanction"
           value={fmt.cr(k.total_sanction)}
@@ -279,11 +393,18 @@ export default function Overview({ data }) {
 
         <KpiCard
           label="Total Sanction"
-          value={kpi.Total_Sanction?.Title}
+          value={formatDisplay(kpi.Total_Sanction?.Title)}
           sub={kpi.Total_Sanction?.Subtitle}
           footer={kpi.Total_Sanction?.Footer}
           sparkPct={100}
           accent="c1"
+          iconName="dollar"
+          badge={{
+            label: "Sanctioned",
+            bgColor: "#E8F1FF",
+            textColor: "#1D4ED8",
+            dotColor: "#1D4ED8", // 👈 key line for badge dot
+          }}
         />
 
         {/* <KpiCard
@@ -300,12 +421,34 @@ export default function Overview({ data }) {
         /> */}
 
         <KpiCard
-          label="Total Exposure"
-          value={kpi.Total_Exposure?.Title}
+          label="Total Outstanding Amount"
+          value={formatDisplay(kpi.Outstanding_Amount?.Title)}
+          sub={kpi.Outstanding_Amount?.Subtitle}
+          footer={kpi.Outstanding_Amount?.Footer}
+          sparkPct={60}
+          accent="c2"
+          iconName="graph"
+          badge={{
+            label: "Outstanding",
+            bgColor: "#E8F5E9",
+            textColor: "#43A047",
+            dotColor: "#43A047", //  key line for badge dot
+          }}
+        />
+
+        <KpiCard
+          label="Total Exposure Amount"
+          value={formatDisplay(kpi.Total_Exposure?.Title)}
           sub={kpi.Total_Exposure?.Subtitle}
           footer={kpi.Total_Exposure?.Footer}
           sparkPct={80}
-          accent="c2"
+          accent="c3"
+          iconName="trending"
+          badge={{
+            label: "Exposure",
+            bgColor: "#FFF3E0",
+            textColor: "#FB8C00",
+          }}
         />
 
         {/* <KpiCard
@@ -322,12 +465,18 @@ export default function Overview({ data }) {
         /> */}
 
         <KpiCard
-          label="Principal Received"
-          value={kpi.Principal_Recieved?.Title}
-          sub={kpi.Principal_Recieved?.Subtitle}
-          footer={kpi.Principal_Recieved?.Footer}
+          label="Avg. Interest Rate"
+          value={formatDisplay(kpi.Avg_IntRate?.Title)}
+          sub={kpi.Avg_IntRate?.Subtitle}
+          footer={kpi.Avg_IntRate?.Footer}
           sparkPct={40}
-          accent="c3"
+          accent="c4"
+          iconName="personFolder"
+          badge={{
+            label: "Rate",
+            bgColor: "#FFF3E0",
+            textColor: "#7B1FA2",
+          }}
         />
 
         {/* <KpiCard
@@ -340,219 +489,298 @@ export default function Overview({ data }) {
           }
           accent="c4"
         /> */}
-
-        <KpiCard
-          label="Outstanding Amount"
-          value={kpi.Outstanding_Amount?.Title}
-          sub={kpi.Outstanding_Amount?.Subtitle}
-          footer={kpi.Outstanding_Amount?.Footer}
-          sparkPct={60}
-          accent="c4"
-        />
       </div>
-      <div className="section-label">Disbursement Activity Trend</div>
-      <div className="chart-card">
-        {/* TITLE */}
-        <div className="chart-title">Quarterly Disbursement Activity</div>
-        <div className="chart-subtitle">QUARTERLY GROUPING • ALL PERIODS</div>
-
-        {/* TOGGLE BUTTONS */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between", // left + right split
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: "10px",
-            marginTop: "8px",
-            marginBottom: "12px",
-          }}
-        >
-          {/* LEFT SIDE → LEGEND */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "20px",
-              flexWrap: "wrap",
-            }}
-          >
-            {/* Loans */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "7px",
-                fontSize: "11px",
-                color: "var(--text-muted)",
-              }}
-            >
-              <div
-                style={{
-                  width: "12px",
-                  height: "12px",
-                  borderRadius: "3px",
-                  background: "rgba(21,101,192,0.7)",
-                }}
-              />
-              No. of Loans
-            </div>
-
-            {/* Sanction */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "7px",
-                fontSize: "11px",
-                color: "var(--text-muted)",
-              }}
-            >
-              <div
-                style={{
-                  width: "12px",
-                  height: "12px",
-                  borderRadius: "3px",
-                  background: "rgba(144,202,249,0.75)",
-                }}
-              />
-              Sanction (₹ Bn)
-            </div>
-
-            {/* Outstanding */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "7px",
-                fontSize: "11px",
-                color: "var(--text-muted)",
-              }}
-            >
-              <div
-                style={{
-                  width: "28px",
-                  height: "3px",
-                  borderRadius: "2px",
-                  background: "#00acc1",
-                }}
-              />
-              Outstanding (₹ Bn)
-            </div>
-          </div>
-
-          {/* RIGHT SIDE → TEXT + BUTTONS + BADGE */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              flexWrap: "wrap",
-            }}
-          >
-            <span
-              style={{
-                fontSize: "10px",
-                color: "var(--text-muted)",
-                fontWeight: 500,
-              }}
-            >
-              Bars = Loans & Sanction &nbsp;|&nbsp; Line = Outstanding
-            </span>
-
-            <div
-              style={{
-                display: "flex",
-                gap: "2px",
-                background: "var(--bg)",
-                border: "1px solid var(--border)",
-                borderRadius: "8px",
-                padding: "3px",
-              }}
-            >
-              {["auto", "monthly", "quarterly", "yearly"].map((mode) => (
-                <button
-                  key={mode}
-                  onClick={() => setViewMode(mode)}
-                  style={{
-                    padding: "4px 8px",
-                    fontSize: "10px",
-                    borderRadius: "6px",
-                    background: viewMode === mode ? "#fff" : "transparent",
-                    color:
-                      viewMode === mode ? "var(--blue)" : "var(--text-muted)",
-                    border:
-                      viewMode === mode ? "1px solid var(--border)" : "none",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                  }}
-                >
-                  {mode.toUpperCase()}
-                </button>
-              ))}
-            </div>
-
-            <span
-              style={{
-                fontSize: "9px",
-                fontWeight: 700,
-                background: "rgba(0,172,193,0.1)",
-                color: "#00acc1",
-                border: "1px solid rgba(0,172,193,0.3)",
-                padding: "3px 9px",
-                borderRadius: "12px",
-                letterSpacing: "0.06em",
-              }}
-            >
-              {viewMode.toUpperCase()}
-            </span>
-          </div>
-        </div>
-        <VerticalBarWithLine data={disbursementData} height={320} />
-      </div>
-      {/* <ActivityChart timeseries={timeseries} /> */}
       <div className="section-label">Gen AI Insights</div>
-      <div className="card">
-        <div className="card-title">
-          Portfolio Intelligence
+      <div className="card ai-panel" data-pdf-section>
+        <div className="ai-panel-header">
+          <div className="ai-panel-brand">
+            <div className="ai-panel-icon">✦</div>
+            <div className="ai-panel-title-block">
+              <div className="ai-panel-title">Exposure Insights</div>
+              <div className="ai-panel-subtitle">
+                Powered by Treasury Intelligence
+              </div>
+            </div>
+          </div>
           <button
             className="insights-btn"
             onClick={generate}
             disabled={aiLoading}
           >
-            {aiLoading ? "⏳ Analysing…" : "✦ Generate AI Insights"}
+            {aiLoading ? "Analysing..." : "✦ Generate Insights"}
           </button>
         </div>
-        {aiError && <ErrorMsg message={aiError} />}
-        {insights && (
-          <div className="insights-grid">
-            {[
-              { label: "📊 Headline", text: insights.headline },
-              { label: "⚠ Risk Flag", text: insights.risk_flag },
-              { label: "💡 Opportunity", text: insights.opportunity },
-              { label: "👁 Watchlist", text: insights.watchlist },
-            ].map((tile) => (
-              <div key={tile.label} className="insight-tile">
-                <div className="insight-tile-label">{tile.label}</div>
-                <div className="insight-tile-text">{tile.text}</div>
+        <div className="ai-panel-body">
+          {aiLoading && (
+            <div className="ai-loading show">
+              <div className="ai-loading-dots">
+                <span className="ai-loading-dot"></span>
+                <span className="ai-loading-dot"></span>
+                <span className="ai-loading-dot"></span>
               </div>
-            ))}
-          </div>
-        )}
-        {!insights && !aiLoading && (
+              <div className="ai-loading-text">
+                Generating portfolio insights...
+              </div>
+            </div>
+          )}
+
+          {!aiLoading && aiError && (
+            <div className="ai-error show">{aiError}</div>
+          )}
+
+          {!aiLoading && !aiError && insightItems.length > 0 && (
+            <div className="ai-result show">
+              <div className="ai-summary-hero">
+                <div className="ai-summary-label">Executive Summary</div>
+                <div className="ai-summary-text">{insightSummary}</div>
+              </div>
+
+              <div className="ai-meta-strip">
+                <div className="ai-meta-pill">Insights: {insightCount}</div>
+                <div className="ai-meta-pill">Model: {insightModel}</div>
+                <div className="ai-meta-pill">
+                  RAG: {ragEnabled ? "Enabled" : "Disabled"}
+                </div>
+              </div>
+
+              <div className="ai-insights-list">
+                {insightItems.map((item, idx) => (
+                  <div key={idx} className="ai-insight-card">
+                    <div className="ai-insight-card-header">
+                      <div className="ai-insight-card-title">
+                        <div className="ai-insight-index">{idx + 1}</div>
+                        <div className="ai-insight-heading">
+                          Insight {idx + 1}
+                        </div>
+                      </div>
+                      {/* <div className="ai-insight-tag general">
+                        {item.tag || "Insight"}
+                      </div> */}
+                      <div
+                        className={`ai-insight-tag ${
+                          idx === 0
+                            ? "concentration-risk"
+                            : idx === 1
+                              ? "asset-quality"
+                              : idx === 2
+                                ? "maturity-profile"
+                                : idx === 3
+                                  ? "utilization"
+                                  : idx === 4
+                                    ? "currency-risk"
+                                    : "currency-risk"
+                        }`}
+                      >
+                        {hardcodedInsightTags[idx] || "CURRENCY RISK"}
+                      </div>
+                    </div>
+
+                    <div className="ai-insight-card-body">
+                      <div className="ai-insight-main">{item.insight}</div>
+
+                      {item.reasoning?.length > 0 && (
+                        <div className="ai-detail-section">
+                          <div className="ai-detail-heading">Reasoning</div>
+                          <ul className="ai-detail-list">
+                            {item.reasoning.map((reason, reasonIndex) => (
+                              <li key={reasonIndex}>{reason}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {item.evidence?.length > 0 && (
+                        <div className="ai-detail-section">
+                          <div className="ai-detail-heading">Evidence</div>
+                          <ul className="ai-detail-list evidence">
+                            {item.evidence.map((evidence, evidenceIndex) => (
+                              <li key={evidenceIndex}>{evidence}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {!insights && !aiLoading && !aiError && (
+            <div className="ai-empty-state">
+              Click the button above to generate AI-powered portfolio insights.
+            </div>
+          )}
+        </div>
+      </div>
+      <div data-pdf-section className="pdf-section-block">
+        <div className="section-label">Disbursement Activity Trend</div>
+        <div className="chart-card">
+          {/* TITLE */}
+          <div className="chart-title">{disbursementTitle}</div>
+          <div className="chart-subtitle">{disbursementSubtitle}</div>
+
+          {/* TOGGLE BUTTONS */}
           <div
             style={{
-              color: "var(--text-muted)",
-              fontSize: ".76rem",
-              padding: "8px 0",
+              display: "flex",
+              justifyContent: "space-between", // left + right split
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: "10px",
+              marginTop: "8px",
+              marginBottom: "12px",
             }}
           >
-            Click the button above to generate AI-powered portfolio insights.
+            {/* LEFT SIDE → LEGEND */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "20px",
+                flexWrap: "wrap",
+              }}
+            >
+              {/* Loans */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "7px",
+                  fontSize: "11px",
+                  color: "var(--text-muted)",
+                }}
+              >
+                <div
+                  style={{
+                    width: "12px",
+                    height: "12px",
+                    borderRadius: "3px",
+                    background: "rgba(21,101,192,0.7)",
+                  }}
+                />
+                No. of Loans
+              </div>
+
+              {/* Sanction */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "7px",
+                  fontSize: "11px",
+                  color: "var(--text-muted)",
+                }}
+              >
+                <div
+                  style={{
+                    width: "12px",
+                    height: "12px",
+                    borderRadius: "3px",
+                    background: "rgba(144,202,249,0.75)",
+                  }}
+                />
+                Sanction (₹ Bn)
+              </div>
+
+              {/* Outstanding */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "7px",
+                  fontSize: "11px",
+                  color: "var(--text-muted)",
+                }}
+              >
+                <div
+                  style={{
+                    width: "28px",
+                    height: "3px",
+                    borderRadius: "2px",
+                    background: "#00acc1",
+                  }}
+                />
+                Outstanding (₹ Bn)
+              </div>
+            </div>
+
+            {/* RIGHT SIDE → TEXT + BUTTONS + BADGE */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                flexWrap: "wrap",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: "10px",
+                  color: "var(--text-muted)",
+                  fontWeight: 500,
+                }}
+              >
+                Bars = Loans & Sanction &nbsp;|&nbsp; Line = Outstanding
+              </span>
+
+              <div
+                style={{
+                  display: "flex",
+                  gap: "2px",
+                  background: "var(--bg)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "8px",
+                  padding: "3px",
+                }}
+              >
+                {["monthly", "quarterly", "yearly"].map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() => setViewMode(mode)}
+                    style={{
+                      padding: "4px 8px",
+                      fontSize: "10px",
+                      borderRadius: "6px",
+                      background: viewMode === mode ? "#fff" : "transparent",
+                      color:
+                        viewMode === mode ? "var(--blue)" : "var(--text-muted)",
+                      border:
+                        viewMode === mode ? "1px solid var(--border)" : "none",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {mode.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+
+              <span
+                style={{
+                  fontSize: "9px",
+                  fontWeight: 700,
+                  background: "rgba(0,172,193,0.1)",
+                  color: "#00acc1",
+                  border: "1px solid rgba(0,172,193,0.3)",
+                  padding: "3px 9px",
+                  borderRadius: "12px",
+                  letterSpacing: "0.06em",
+                }}
+              >
+                {viewMode.toUpperCase()}
+              </span>
+            </div>
           </div>
-        )}
+          <VerticalBarWithLineOverview
+            data={disbursementData}
+            height={320}
+            viewMode={viewMode}
+          />
+        </div>
       </div>
+      {/* <ActivityChart timeseries={timeseries} /> */}
       <div className="section-label">Portfolio Distribution</div>
-      <div className="two-col">
+      <div className="two-col" data-pdf-section>
         <div className="chart-card">
           <div className="chart-title" style={{ marginBottom: "6px" }}>
             Top {topN} Groups by Outstanding
@@ -603,9 +831,10 @@ export default function Overview({ data }) {
             data={topGroupsOutstanding}
             dataKey="count"
             nameKey="label"
-            height={260}
+            height={360}
             barSize={20}
-            formatter={(v) => `₹${v} Cr`}
+            slantLabels={true}
+            formatter={(v) => `₹${v.toLocaleString("en-IN")} Cr`}
           />
         </div>
         <div className="chart-card">
@@ -614,17 +843,19 @@ export default function Overview({ data }) {
           <DonutChart
             data={productDonut}
             colors={["#1565c0", "#00acc1"]}
-            height={220}
+            height={320}
             formatter={(v) => `₹${(v || 0).toFixed(2)} Cr`}
           />
           <DonutLegend
             data={productDonut}
             colors={["#1565c0", "#00acc1"]}
             showPercent={true}
+            showValue={true}
+            valueFormatter={(v) => `₹${Math.round(v || 0)} Cr`}
           />
         </div>
       </div>
-      <div className="two-col">
+      <div className="two-col" data-pdf-section>
         <div className="chart-card">
           <div className="chart-title">Tenor Distribution</div>
           <div className="chart-subtitle">LOAN COUNT BY MATURITY BAND</div>
@@ -632,7 +863,7 @@ export default function Overview({ data }) {
             data={tenorChartData}
             dataKey="count"
             nameKey="label"
-            height={220}
+            height={320}
           />
         </div>
         <div className="chart-card">
@@ -642,11 +873,11 @@ export default function Overview({ data }) {
             data={rateChartData}
             dataKey="count"
             nameKey="label"
-            height={220}
+            height={320}
           />
         </div>
       </div>
-      <div className="two-col">
+      <div className="two-col" data-pdf-section>
         <div className="chart-card">
           <div className="chart-title">Outstanding vs Sanction</div>
           <div className="chart-subtitle" style={{ marginBottom: "20px" }}>
@@ -667,7 +898,8 @@ export default function Overview({ data }) {
                 gradient: "greenGrad",
               },
             ]}
-            height={280}
+            height={380}
+            formatter={(v) => `₹${(v / 1e7).toLocaleString("en-IN")} Cr`}
           />
         </div>
         <div className="chart-card">
@@ -675,14 +907,20 @@ export default function Overview({ data }) {
           <div className="chart-subtitle">PRINCIPAL & INTEREST RECEIVED</div>
           <DonutChart
             data={collectionDonut}
-            colors={["#2e7d32", "#43a047", "#e53935"]}
-            height={220}
-            formatter={(v) => `₹${v} Cr`}
+            colors={["#1565c0", "#00acc1", "#90caf9"]}
+            height={320}
+            formatter={(v) =>
+              `₹${Math.round((v || 0) / 1e7).toLocaleString("en-IN")} Cr`
+            }
           />
           <DonutLegend
             data={collectionDonut}
-            colors={["#2e7d32", "#43a047", "#e53935"]}
+            colors={["#1565c0", "#00acc1", "#90caf9"]}
             showPercent={true}
+            showValue={true}
+            valueFormatter={(v) =>
+              `₹${Math.round((v || 0) / 1e7).toLocaleString("en-IN")} Cr`
+            }
           />
         </div>
       </div>
