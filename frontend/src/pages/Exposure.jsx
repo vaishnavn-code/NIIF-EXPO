@@ -17,11 +17,7 @@ const COLUMNS = [
   {
     key: "bp_group",
     label: "Group",
-    render: (v) => (
-      <span style={{ fontWeight: 700, color: "#111" }}>
-        {v}
-      </span>
-    ),
+    render: (v) => <span style={{ fontWeight: 700, color: "#111" }}>{v}</span>,
   },
 
   { key: "loan_count", label: "Loans" },
@@ -42,9 +38,7 @@ const COLUMNS = [
     key: "outstanding_amt",
     label: "Outstanding (₹ Cr)",
     render: (v) => (
-      <span style={{ fontWeight: 700, color: "#2E6090" }}>
-        {fmt.cr(v)}
-      </span>
+      <span style={{ fontWeight: 700, color: "#2E6090" }}>{fmt.cr(v)}</span>
     ),
   },
 
@@ -111,8 +105,7 @@ const COLUMNS = [
   },
 ];
 
-export default function Exposure({ data }) {
-  console.log("Exposure data:", data);
+export default function Exposure({ data, pdfMode = false }) {
   const kpis = data?.exposure?.kpi || {};
   const exposureTable = data?.exposure?.table || [];
   const [topN, setTopN] = useState({
@@ -122,7 +115,7 @@ export default function Exposure({ data }) {
     rateBar: 15,
   });
   const [search, setSearch] = useState("");
-  const PAGE_SIZE = 25;
+  const PAGE_SIZE = pdfMode ? 10 : 25;
   const fetcher = useCallback((p) => dashboardApi.getGroups(p), []);
   const { rows, total, totalPages, loading, params, updateParams } =
     usePaginatedData(fetcher, {
@@ -194,10 +187,10 @@ export default function Exposure({ data }) {
       .slice(0, topN.rateBar);
   }, [exposureTable, topN.rateBar]);
 
-const handleSearch = (e) => {
-  setSearch(e.target.value);
-  updateParams({ page: 1 }); 
-};
+  const handleSearch = (e) => {
+    setSearch(e.target.value);
+    updateParams({ page: 1 });
+  };
   const handleSort = (key) => {
     const dir =
       params.sort_by === key && params.sort_dir === "desc" ? "asc" : "desc";
@@ -210,26 +203,26 @@ const handleSearch = (e) => {
     "TL_Disbursements",
     "DEB_Disbursements",
   ];
-const filteredRows = useMemo(() => {
-  const source = allGroups?.length ? allGroups : exposureTable;
+  const filteredRows = useMemo(() => {
+    const source = allGroups?.length ? allGroups : exposureTable;
 
-  if (!search) return source;
+    if (!search) return source;
 
-  return source.filter((row) =>
-    row.bp_group?.toLowerCase().includes(search.toLowerCase())
-  );
-}, [search, allGroups, exposureTable]);
-const paginatedRows = useMemo(() => {
-  const start = (params.page - 1) * PAGE_SIZE;
-  return filteredRows.slice(start, start + PAGE_SIZE);
-}, [filteredRows, params.page]);
-const totalPagesLocal = Math.ceil(filteredRows.length / PAGE_SIZE);  return (
+    return source.filter((row) =>
+      row.bp_group?.toLowerCase().includes(search.toLowerCase()),
+    );
+  }, [search, allGroups, exposureTable]);
+  const paginatedRows = useMemo(() => {
+    const start = (params.page - 1) * PAGE_SIZE;
+    return filteredRows.slice(start, start + PAGE_SIZE);
+  }, [filteredRows, params.page]);
+  const totalPagesLocal = Math.ceil(filteredRows.length / PAGE_SIZE);
+  return (
     <div>
       <div className="section-label">Exposure Analytics — Group Breakdown</div>
 
       <div className="four-col">
         {KPI_ORDER.map((key, index) => {
-          console.log("Exposure KPI:", data?.exposure?.kpi);
           const item = kpis[key];
           if (!item) return null;
 
@@ -294,7 +287,7 @@ const totalPagesLocal = Math.ceil(filteredRows.length / PAGE_SIZE);  return (
         </div>
       </div>
 
-      <div className="two-col">
+      <div className="two-col" data-pdf-section>
         <div className="chart-card">
           <div className="chart-title">Interest Received by Group</div>
           <div className="chart-subtitle">₹ Cr</div>
@@ -336,49 +329,51 @@ const totalPagesLocal = Math.ceil(filteredRows.length / PAGE_SIZE);  return (
           />
         </div>
       </div>
-
-      <div className="section-label">Group Summary Table</div>
-      <div className="card">
-        <div className="card-title">
-          Group-Level Exposure Summary
-          <span className="card-badge">{exposureTable.length} GROUPS</span>
-        </div>
-        <div className="cio-note">
-          Portfolio covers <strong>{exposureTable.length} borrower groups</strong>
-          with active exposure data.
-        </div>
-        <div className="toolbar">
-          <input
-            className="toolbar-input"
-            placeholder="Search Group Name…"
-            value={search}
-            onChange={handleSearch}
+      <div data-pdf-section className="pdf-section-block">
+        <div className="section-label">Group Summary Table</div>
+        <div className="card">
+          <div className="card-title">
+            Group-Level Exposure Summary
+            <span className="card-badge">{exposureTable.length} GROUPS</span>
+          </div>
+          <div className="cio-note">
+            Portfolio covers{" "}
+            <strong>{exposureTable.length} borrower groups</strong>
+            with active exposure data.
+          </div>
+          <div className="toolbar">
+            <input
+              className="toolbar-input"
+              placeholder="Search Group Name…"
+              value={search}
+              onChange={handleSearch}
+            />
+            <button
+              className="toolbar-btn"
+              onClick={() => {
+                setSearch("");
+                updateParams({ search: "", page: 1 });
+              }}
+            >
+              Clear
+            </button>
+            <span className="toolbar-count">
+              {total.toLocaleString("en-IN")} groups
+            </span>
+          </div>
+          <DataTable
+            columns={COLUMNS}
+            rows={paginatedRows}
+            total={filteredRows.length}
+            page={params.page}
+            totalPages={totalPagesLocal}
+            onPage={(p) => updateParams({ page: p })}
+            sortBy={params.sort_by}
+            sortDir={params.sort_dir}
+            onSort={handleSort}
+            loading={loading}
           />
-          <button
-            className="toolbar-btn"
-            onClick={() => {
-              setSearch("");
-              updateParams({ search: "", page: 1 });
-            }}
-          >
-            Clear
-          </button>
-          <span className="toolbar-count">
-            {total.toLocaleString("en-IN")} groups
-          </span>
         </div>
-        <DataTable
-          columns={COLUMNS}
-          rows={paginatedRows}
-          total={filteredRows.length}
-          page={params.page}
-          totalPages={totalPagesLocal}
-          onPage={(p) => updateParams({ page: p })}
-          sortBy={params.sort_by}
-          sortDir={params.sort_dir}
-          onSort={handleSort}
-          loading={loading}
-        />
       </div>
     </div>
   );

@@ -151,12 +151,12 @@ const COLUMNS = [
   },
 ];
 
-export default function Loans({ data }) {
+export default function Loans({ data, pdfMode = false  }) {
 
   const rows = data?.loan_portfolio?.table || [];
   const kpi = data?.exposure?.kpi || {}
   const [page, setPage] = useState(1);
-  const PER_PAGE = 25;
+  const PER_PAGE = pdfMode ? 6 : 25;
 
 
 

@@ -381,7 +381,7 @@ export default function Overview({ data }) {
   return (
     <div>
       <div className="section-label">Portfolio KPIs — All Figures in INR</div>
-      <div className="four-col">
+      <div className="four-col" data-pdf-section>
         {/* <KpiCard
           label="Total Sanction"
           value={fmt.cr(k.total_sanction)}
@@ -491,13 +491,15 @@ export default function Overview({ data }) {
         /> */}
       </div>
       <div className="section-label">Gen AI Insights</div>
-      <div className="card ai-panel">
+      <div className="card ai-panel" data-pdf-section>
         <div className="ai-panel-header">
           <div className="ai-panel-brand">
             <div className="ai-panel-icon">✦</div>
             <div className="ai-panel-title-block">
               <div className="ai-panel-title">Exposure Insights</div>
-              <div className="ai-panel-subtitle">Powered by Treasury Intelligence</div>
+              <div className="ai-panel-subtitle">
+                Powered by Treasury Intelligence
+              </div>
             </div>
           </div>
           <button
@@ -610,173 +612,175 @@ export default function Overview({ data }) {
           )}
         </div>
       </div>
-      <div className="section-label">Disbursement Activity Trend</div>
-      <div className="chart-card">
-        {/* TITLE */}
-        <div className="chart-title">{disbursementTitle}</div>
-        <div className="chart-subtitle">{disbursementSubtitle}</div>
+      <div data-pdf-section className="pdf-section-block">
+        <div className="section-label">Disbursement Activity Trend</div>
+        <div className="chart-card">
+          {/* TITLE */}
+          <div className="chart-title">{disbursementTitle}</div>
+          <div className="chart-subtitle">{disbursementSubtitle}</div>
 
-        {/* TOGGLE BUTTONS */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between", // left + right split
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: "10px",
-            marginTop: "8px",
-            marginBottom: "12px",
-          }}
-        >
-          {/* LEFT SIDE → LEGEND */}
+          {/* TOGGLE BUTTONS */}
           <div
             style={{
               display: "flex",
+              justifyContent: "space-between", // left + right split
               alignItems: "center",
-              gap: "20px",
               flexWrap: "wrap",
-            }}
-          >
-            {/* Loans */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "7px",
-                fontSize: "11px",
-                color: "var(--text-muted)",
-              }}
-            >
-              <div
-                style={{
-                  width: "12px",
-                  height: "12px",
-                  borderRadius: "3px",
-                  background: "rgba(21,101,192,0.7)",
-                }}
-              />
-              No. of Loans
-            </div>
-
-            {/* Sanction */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "7px",
-                fontSize: "11px",
-                color: "var(--text-muted)",
-              }}
-            >
-              <div
-                style={{
-                  width: "12px",
-                  height: "12px",
-                  borderRadius: "3px",
-                  background: "rgba(144,202,249,0.75)",
-                }}
-              />
-              Sanction (₹ Bn)
-            </div>
-
-            {/* Outstanding */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "7px",
-                fontSize: "11px",
-                color: "var(--text-muted)",
-              }}
-            >
-              <div
-                style={{
-                  width: "28px",
-                  height: "3px",
-                  borderRadius: "2px",
-                  background: "#00acc1",
-                }}
-              />
-              Outstanding (₹ Bn)
-            </div>
-          </div>
-
-          {/* RIGHT SIDE → TEXT + BUTTONS + BADGE */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
               gap: "10px",
-              flexWrap: "wrap",
+              marginTop: "8px",
+              marginBottom: "12px",
             }}
           >
-            <span
-              style={{
-                fontSize: "10px",
-                color: "var(--text-muted)",
-                fontWeight: 500,
-              }}
-            >
-              Bars = Loans & Sanction &nbsp;|&nbsp; Line = Outstanding
-            </span>
-
+            {/* LEFT SIDE → LEGEND */}
             <div
               style={{
                 display: "flex",
-                gap: "2px",
-                background: "var(--bg)",
-                border: "1px solid var(--border)",
-                borderRadius: "8px",
-                padding: "3px",
+                alignItems: "center",
+                gap: "20px",
+                flexWrap: "wrap",
               }}
             >
-              {["monthly", "quarterly", "yearly"].map((mode) => (
-                <button
-                  key={mode}
-                  onClick={() => setViewMode(mode)}
+              {/* Loans */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "7px",
+                  fontSize: "11px",
+                  color: "var(--text-muted)",
+                }}
+              >
+                <div
                   style={{
-                    padding: "4px 8px",
-                    fontSize: "10px",
-                    borderRadius: "6px",
-                    background: viewMode === mode ? "#fff" : "transparent",
-                    color:
-                      viewMode === mode ? "var(--blue)" : "var(--text-muted)",
-                    border:
-                      viewMode === mode ? "1px solid var(--border)" : "none",
-                    fontWeight: 600,
-                    cursor: "pointer",
+                    width: "12px",
+                    height: "12px",
+                    borderRadius: "3px",
+                    background: "rgba(21,101,192,0.7)",
                   }}
-                >
-                  {mode.toUpperCase()}
-                </button>
-              ))}
+                />
+                No. of Loans
+              </div>
+
+              {/* Sanction */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "7px",
+                  fontSize: "11px",
+                  color: "var(--text-muted)",
+                }}
+              >
+                <div
+                  style={{
+                    width: "12px",
+                    height: "12px",
+                    borderRadius: "3px",
+                    background: "rgba(144,202,249,0.75)",
+                  }}
+                />
+                Sanction (₹ Bn)
+              </div>
+
+              {/* Outstanding */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "7px",
+                  fontSize: "11px",
+                  color: "var(--text-muted)",
+                }}
+              >
+                <div
+                  style={{
+                    width: "28px",
+                    height: "3px",
+                    borderRadius: "2px",
+                    background: "#00acc1",
+                  }}
+                />
+                Outstanding (₹ Bn)
+              </div>
             </div>
 
-            <span
+            {/* RIGHT SIDE → TEXT + BUTTONS + BADGE */}
+            <div
               style={{
-                fontSize: "9px",
-                fontWeight: 700,
-                background: "rgba(0,172,193,0.1)",
-                color: "#00acc1",
-                border: "1px solid rgba(0,172,193,0.3)",
-                padding: "3px 9px",
-                borderRadius: "12px",
-                letterSpacing: "0.06em",
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                flexWrap: "wrap",
               }}
             >
-              {viewMode.toUpperCase()}
-            </span>
+              <span
+                style={{
+                  fontSize: "10px",
+                  color: "var(--text-muted)",
+                  fontWeight: 500,
+                }}
+              >
+                Bars = Loans & Sanction &nbsp;|&nbsp; Line = Outstanding
+              </span>
+
+              <div
+                style={{
+                  display: "flex",
+                  gap: "2px",
+                  background: "var(--bg)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "8px",
+                  padding: "3px",
+                }}
+              >
+                {["monthly", "quarterly", "yearly"].map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() => setViewMode(mode)}
+                    style={{
+                      padding: "4px 8px",
+                      fontSize: "10px",
+                      borderRadius: "6px",
+                      background: viewMode === mode ? "#fff" : "transparent",
+                      color:
+                        viewMode === mode ? "var(--blue)" : "var(--text-muted)",
+                      border:
+                        viewMode === mode ? "1px solid var(--border)" : "none",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {mode.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+
+              <span
+                style={{
+                  fontSize: "9px",
+                  fontWeight: 700,
+                  background: "rgba(0,172,193,0.1)",
+                  color: "#00acc1",
+                  border: "1px solid rgba(0,172,193,0.3)",
+                  padding: "3px 9px",
+                  borderRadius: "12px",
+                  letterSpacing: "0.06em",
+                }}
+              >
+                {viewMode.toUpperCase()}
+              </span>
+            </div>
           </div>
+          <VerticalBarWithLineOverview
+            data={disbursementData}
+            height={320}
+            viewMode={viewMode}
+          />
         </div>
-        <VerticalBarWithLineOverview
-          data={disbursementData}
-          height={320}
-          viewMode={viewMode}
-        />
       </div>
       {/* <ActivityChart timeseries={timeseries} /> */}
       <div className="section-label">Portfolio Distribution</div>
-      <div className="two-col">
+      <div className="two-col" data-pdf-section>
         <div className="chart-card">
           <div className="chart-title" style={{ marginBottom: "6px" }}>
             Top {topN} Groups by Outstanding
@@ -851,7 +855,7 @@ export default function Overview({ data }) {
           />
         </div>
       </div>
-      <div className="two-col">
+      <div className="two-col" data-pdf-section>
         <div className="chart-card">
           <div className="chart-title">Tenor Distribution</div>
           <div className="chart-subtitle">LOAN COUNT BY MATURITY BAND</div>
@@ -873,7 +877,7 @@ export default function Overview({ data }) {
           />
         </div>
       </div>
-      <div className="two-col">
+      <div className="two-col" data-pdf-section>
         <div className="chart-card">
           <div className="chart-title">Outstanding vs Sanction</div>
           <div className="chart-subtitle" style={{ marginBottom: "20px" }}>

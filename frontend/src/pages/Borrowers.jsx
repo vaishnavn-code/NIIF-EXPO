@@ -183,7 +183,7 @@ const totalPages = Math.ceil(borrowersTable.length / PER_PAGE);
       </div>
 
       {/* TABLE */}
-      <div className="card">
+      <div className="card" data-pdf-section>
         <div className="card-title">
           Customer Exposure Register
           <span className="card-badge">

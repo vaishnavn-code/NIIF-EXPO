@@ -146,7 +146,7 @@ export default function Rates({ data }) {
         </div>
       </div>
 
-      <div className="two-col">
+      <div className="two-col" data-pdf-section>
         <div className="chart-card">
           <div className="chart-title">Interest Received vs Due</div>
           <div className="chart-subtitle" style={{marginBottom : "20px"}}>COLLECTION EFFICIENCY (₹ Cr)</div>

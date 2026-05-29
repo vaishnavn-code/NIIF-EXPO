@@ -472,7 +472,7 @@ export default function Transactions({ data }) {
         </div>
       </div>
 
-      <div className="two-col">
+      <div className="two-col" data-pdf-section>
         <div className="chart-card">
           <div className="chart-title">Quarterly Sanction Volume</div>
           <div className="chart-subtitle">SANCTION ₹ BN — ALL QUARTERS</div>
@@ -574,7 +574,7 @@ export default function Transactions({ data }) {
         </div>
       </div>
 
-      <div className="two-col">
+      <div className="two-col" data-pdf-section>
         <div className="chart-card">
           <div className="chart-title">Product Type Mix</div>
           <div className="chart-subtitle">TL vs DEB — BY COUNT</div>
@@ -623,7 +623,7 @@ export default function Transactions({ data }) {
         </div>
       </div>
 
-      <div className="card">
+      <div className="card" data-pdf-section>
         <div class="card-title">
           All Disbursements <span className="card-badge" id="txnBadge"></span>
         </div>
